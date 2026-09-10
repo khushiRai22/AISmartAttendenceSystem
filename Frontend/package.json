@@ -1,16 +1,16 @@
 {
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
+    "serve": "^14.2.6",
     "tailwindcss": "^4.1.18"
   },
   "name": "frontend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tailwindcss -i ./src/index.css -o ./dist/output.css --watch"
+    "start": "serve -s src -l ${PORT:-3000}"
   },
   "author": "",
   "license": "ISC"
