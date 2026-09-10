@@ -498,7 +498,7 @@
            FACULTY DASHBOARD LOGIC 
            ========================================================== */
 
-        const API_BASE = "http://localhost:8080/api/faculty";
+        const API_BASE = "https://aismartattendencesystem-production.up.railway.app/api/faculty";
         
         // --- 1. AUTH GUARD ---
         const token = localStorage.getItem("token");
@@ -971,7 +971,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (!res.ok) return;
                 const timetables = await res.json();
                 for (const t of timetables) {
-                    const sRes = await fetch(`http://localhost:8080/api/faculty/attendance/session-status?timetableId=${t.id}`, { headers: getHeaders() });
+                    const sRes = await fetch(`https://aismartattendencesystem-production.up.railway.app/api/faculty/attendance/session-status?timetableId=${t.id}`, { headers: getHeaders() });
                     if (sRes.ok) {
                         const s = await sRes.json();
                         if (s && s.active) {
@@ -1133,7 +1133,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 '<tr><td colspan="6" class="text-center py-8 text-slate-400">Loading...</td></tr>';
             try {
                 const res = await fetch(
-                    `http://localhost:8080/api/faculty/reports/batch/${batchId}`,
+                    `https://aismartattendencesystem-production.up.railway.app/api/faculty/reports/batch/${batchId}`,
                     { headers: getHeaders() }
                 );
                 if (!res.ok) throw new Error('Failed');
@@ -1212,7 +1212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 let allRows = [];
                 for (const tt of timetables) {
                     const res = await fetch(
-                        `http://localhost:8080/api/faculty/reports/daily/${tt.id}?date=${date}`,
+                        `https://aismartattendencesystem-production.up.railway.app/api/faculty/reports/daily/${tt.id}?date=${date}`,
                         { headers: getHeaders() }
                     );
                     if (res.ok) {
