@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Smart Attendance-AI</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky Blue base
+                            600: '#0284c7', 
+                            900: '#0c4a6e',
+                            accent: '#f97316' // Orange accent
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles for iOS 26 Theme */
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow: hidden; /* Prevent scrolling for split layout */
+        }
+
+        /* Ambient Blobs */
+        .blob-bg {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+            animation: pulse-slow 10s infinite alternate;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* Glass Panel for Login Box */
+        .glass-login {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #0ea5e9 0%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Form Input Styles */
+        .input-glass {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(203, 213, 225, 0.6);
+            transition: all 0.3s ease;
+        }
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+            outline: none;
+        }
+
+        /* Eye Icon Cursor */
+        #togglePassword {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center relative">
+
+    <!-- Background Ambience -->
+    <div class="blob-bg w-[800px] h-[800px] bg-blue-100 rounded-full -top-40 -left-40 mix-blend-multiply"></div>
+    <div class="blob-bg w-[600px] h-[600px] bg-orange-50 rounded-full -bottom-20 -right-20 mix-blend-multiply animation-delay-2000"></div>
+
+    <div class="w-full h-full flex overflow-hidden bg-white/30 backdrop-blur-sm">
+        
+        <!-- Left Side: Visuals (Hidden on Mobile) -->
+        <div class="hidden lg:flex w-1/2 relative items-center justify-center p-12">
+            <div class="relative z-10 text-center max-w-lg">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-white/50 shadow-sm backdrop-blur-md mb-8">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-slate-600 tracking-wide uppercase">Secure Portal</span>
+                </div>
+                <h1 class="text-5xl font-extrabold text-slate-900 mb-6 leading-tight">
+                    Welcome back to <br/>
+                    <span class="text-gradient">Smart Attendance</span>
+                </h1>
+                <p class="text-lg text-slate-600 mb-8 font-medium">
+                    Experience the future of seamless, AI-powered classroom management. Secure, fast, and contactless.
+                </p>
+                <!-- Decorative Abstract Element -->
+                <div class="glass-login p-6 rounded-3xl inline-block transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i class="fa-solid fa-face-smile text-xl"></i></div>
+                        <div class="text-left">
+                            <p class="font-bold text-slate-800">Biometric Ready</p>
+                            <p class="text-xs text-slate-500">Camera Active</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-24 bg-slate-200 rounded-full"></span>
+                        <span class="h-2 w-12 bg-green-400 rounded-full"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
+            <div class="glass-login w-full max-w-md p-8 sm:p-10 rounded-[2.5rem] relative z-20">
+                
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <a href="index.html" class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl text-white shadow-lg mb-4 hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-expand text-xl"></i>
+                    </a>
+                    <h2 class="text-2xl font-bold text-slate-900">Sign In</h2>
+                    <p class="text-slate-500 text-sm mt-2">Enter your credentials to access the portal</p>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                        <input type="email" id="email" placeholder="name@university.edu" class="w-full px-4 py-3 rounded-xl input-glass text-sm font-medium placeholder:text-slate-400" required>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                        <input type="password" id="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl input-glass text-sm font-medium placeholder:text-slate-400" required>
+                        <!-- Updated: Removed onclick, added id for JS listener -->
+                        <i class='bx bx-show absolute right-4 top-[38px] text-xl text-slate-500 hover:text-brand-500' id="togglePassword"></i>
+                        <div class="flex justify-end mt-2">
+                            <a href="#" class="text-xs font-semibold text-brand-600 hover:text-brand-500">Forgot Password?</a>
+                        </div>
+                    </div>
+
+                    <!-- Added: Error Message Container -->
+                    <p id="errorMsg" class="text-red-500 text-xs font-semibold text-center h-4"></p>
+
+                    <button type="submit" id="loginBtn" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-slate-900/20 active:scale-[0.98]">
+                        Sign In
+                    </button>
+                </form>
+
+                <p class="text-center text-xs text-slate-400 mt-8">
+                    &copy; 2025 Smart Attendance AI. Secured by JWT.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById("password");
+            const togglePassword = document.getElementById("togglePassword");
+            const loginForm = document.getElementById("loginForm");
+            const loginBtn = document.getElementById("loginBtn");
+            const errorMsg = document.getElementById("errorMsg");
+            const emailInput = document.getElementById("email");
+
+            // 1. Better Password Toggle
+            if(togglePassword) {
+                togglePassword.addEventListener("click", function() {
+                    const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                    passwordInput.setAttribute("type", type);
+                    
+                    // Change icon
+                    this.classList.toggle("bx-show");
+                    this.classList.toggle("bx-hide");
+                });
+            }
+
+            // 2. Form Submission
+            if(loginForm) {
+                loginForm.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    
+                    // UI Loading State
+                    const originalBtnText = loginBtn.innerHTML;
+                    loginBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+                    loginBtn.disabled = true;
+                    loginBtn.classList.add("opacity-75", "cursor-not-allowed");
+                    errorMsg.innerText = "";
+
+                    try {
+                        const response = await fetch("http://localhost:8080/api/auth/login", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                email: email.value,
+                                password: password.value
+                            }),
+                            
+                        });
+
+                        
+
+                        const data = await response.json();
+                        console.log("Server Response:", data);
+                        if(data.role==="ADMIN"){
+                            localStorage.setItem("token", data.token);
+                            window.location.href = "admin_dashboard.html";
+                        }else if(data.role==="STUDENT"){
+                            localStorage.setItem("token", data.token);
+                            window.location.href = "student_dashboard.html";
+                        }else if(data.role==="FACULTY"){
+                            localStorage.setItem("token", data.token);
+                            window.location.href = "faculty.html";
+                        }else{
+
+                            throw new Error(data.message || "Invalid credentials");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        
+                        // --- FALLBACK FOR DEMO (Since localhost:8080 might not be running) ---
+                        // Remove this block in production
+                        if(err.message.includes("Failed to fetch")) {
+                            console.warn("Backend unreachable. Using Demo Login.");
+                            setTimeout(() => {
+                                // window.location.href = "index.html";
+                            }, 1000);
+                            return;
+                        }
+                        // ------------------------------------------------------------------
+
+                        errorMsg.innerText = "❌ " + err.message;
+                        loginBtn.innerHTML = originalBtnText;
+                        loginBtn.disabled = false;
+                        loginBtn.classList.remove("opacity-75", "cursor-not-allowed");
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

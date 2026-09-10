@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Invitation</title>
+    <!-- Importing Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Email Client Resets */
+        body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; background-color: #f8fafc; }
+        table { border-spacing: 0; border-collapse: collapse; }
+        
+        /* Typography */
+        body, td { font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; color: #334155; }
+        
+        /* Styles matching SmartAttendance-AI Theme */
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f8fafc; padding: 40px 0; }
+        
+        /* Glassmorphism Card Style for Email */
+        .card { 
+            background-color: #ffffff; 
+            margin: 0 auto; 
+            width: 100%; 
+            max-width: 580px; 
+            border-radius: 24px; 
+            overflow: hidden; 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); 
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Header */
+        .header { 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            padding: 40px; 
+            text-align: center; 
+            position: relative;
+        }
+        
+        /* Logo */
+        .logo { 
+            color: #ffffff; 
+            font-size: 26px; 
+            font-weight: 800; 
+            letter-spacing: -0.5px; 
+        }
+        .logo span { color: #0ea5e9; } /* Sky Blue Accent */
+        
+        /* Content */
+        .body-content { padding: 40px; background-color: #ffffff; }
+        .welcome-text { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 15px; letter-spacing: -0.5px; }
+        .description { font-size: 16px; line-height: 1.6; color: #64748b; margin-bottom: 30px; }
+        
+        /* The "Tech" Info Box - Styled like glass-panel */
+        .info-box { 
+            background-color: #f0f9ff; /* brand-50 */
+            border: 1px solid #e0f2fe; /* brand-100 */
+            border-radius: 16px; 
+            padding: 24px; 
+            margin-bottom: 30px; 
+        }
+        .info-row { margin-bottom: 12px; font-size: 14px; }
+        .info-label { color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+        .info-value { color: #0f172a; font-weight: 700; margin-left: 10px; font-family: 'Plus Jakarta Sans', monospace; }
+        
+        /* Modern Button - Blue Gradient */
+        .btn-container { text-align: center; margin-bottom: 30px; }
+        .btn { 
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); /* Brand Blue Gradient */
+            color: #ffffff !important; 
+            padding: 16px 40px; 
+            text-decoration: none; 
+            border-radius: 50px; /* Pill shape */
+            font-weight: 700; 
+            font-size: 16px; 
+            display: inline-block; 
+            box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.4); 
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* Footer */
+        .footer { background-color: #f1f5f9; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; }
+        .footer-links { font-size: 12px; color: #94a3b8; margin-bottom: 15px; }
+        .footer-links a { color: #64748b; text-decoration: none; font-weight: 600; margin: 0 8px; }
+        .security-note { font-size: 11px; color: #cbd5e1; line-height: 1.5; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <table class="card" align="center">
+        <tr>
+            <td class="header">
+                <!-- Abstract decorative circle in header -->
+                <!-- Note: CSS shapes are safer than SVG in some email clients -->
+                <div class="logo">SmartAttendance<span>Ai</span></div>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="body-content">
+                <div class="welcome-text">Start your journey, {{name}}.</div>
+                
+                <p class="description">
+                    You have been granted access to the <strong>SmartAttendanceAI</strong> ecosystem. Please activate your account to sync your schedule and track real-time attendance via our secure portal.
+                </p>
+
+                <table width="100%" class="info-box">
+                    <tr>
+                        <td>
+                            <div class="info-row">
+                                <span class="info-label">Access Role</span>
+                                <span class="info-value" style="color: #0ea5e9;">{{role}}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Institution</span>
+                                <span class="info-value">SmartAttendanceAI Inc.</span>
+                            </div>
+                            <div class="info-row" style="margin-bottom: 0;">
+                                <span class="info-label">Link Expiry</span>
+                                <span class="info-value" style="color:#ef4444;">24 Hours</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="btn-container">
+                    <a href="{{link}}" class="btn">Verify & Activate Account</a>
+                </div>
+
+                <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 0;">
+                    Or paste this link: <a href="{{link}}" style="color: #0ea5e9; text-decoration: none; word-break: break-all; font-weight: 600;">{{link}}</a>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="footer">
+                <div class="footer-links">
+                    <a href="#">Help Center</a> &bull; 
+                    <a href="#">Privacy Policy</a> &bull; 
+                    <a href="#">Terms</a>
+                </div>
+                <p class="security-note">
+                    Secure System Notification. Sent automatically by SmartAttendanceAI.<br>
+                    ID: #SA-{{uuid}} | Encryption: TLS 1.2+ | <span style="color: #0ea5e9;">AI-Verified</span>
+                </p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Dashboard | Smart Attendance-AI</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            accent: '#f97316'
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                        'glass-hover': '0 12px 40px 0 rgba(31, 38, 135, 0.15)',
+                    },
+                    borderRadius: {
+                        'xl-p': '1rem',
+                        '2xl-p': '1.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Theme */
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-right: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        /* Ambient Blobs */
+        .blob-bg {
+            position: absolute;
+            filter: blur(90px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: pulse-slow 8s infinite alternate;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* View Switching Transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem; /* xl-p */
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Responsive UI enhancements */
+        @media (max-width: 1024px) {
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+        @media (max-width: 768px) {
+            #main-content {
+                padding: 1rem !important;
+            }
+            .glass-panel {
+                padding: 1.25rem !important;
+            }
+            h1 {
+                font-size: 1.5rem !important;
+            }
+            h3 {
+                font-size: 1.1rem !important;
+            }
+        }
+        @media (max-width: 640px) {
+            .grid {
+                gap: 1rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased h-screen flex overflow-hidden selection:bg-brand-500 selection:text-white font-sans">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Ambient Background -->
+    <div class="blob-bg w-[600px] h-[600px] bg-brand-100 rounded-full -top-40 -left-40 mix-blend-multiply"></div>
+    <div class="blob-bg w-[500px] h-[500px] bg-purple-100 rounded-full top-20 right-0 mix-blend-multiply animation-delay-2000"></div>
+    <div class="blob-bg w-[400px] h-[400px] bg-orange-50 rounded-full bottom-0 left-20 mix-blend-multiply animation-delay-4000"></div>
+
+    <!-- 1️⃣ LEFT SIDEBAR -->
+    <aside class="hidden md:flex w-72 glass-sidebar flex-col h-full z-30 transition-all duration-300 fixed left-0 top-0">
+        <!-- Logo -->
+        <div class="h-24 flex items-center gap-3 px-8 cursor-pointer border-b border-slate-100" onclick="window.location.href='index.html'">
+            <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                <i class="fa-solid fa-expand text-lg"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-800 tracking-tight">SmartAttendance<span class="text-brand-500">.ai</span></span>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto" id="sidebar-nav">
+            <!-- Items injected by JS -->
+        </nav>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-slate-100">
+            <div class="flex items-center gap-3 mb-4 px-2">
+                <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">SA</div>
+                <div>
+                    <p class="text-sm font-bold text-slate-800">System Admin</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wide">Administrator</p>
+                </div>
+            </div>
+            <button onclick="logoutAdmin()" class="flex items-center gap-3 w-full px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl-p font-medium transition-all">
+                <i class="fa-solid fa-right-from-bracket w-5"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- 2️⃣ MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-full ml-0 md:ml-72 overflow-y-auto overflow-x-hidden relative z-10 bg-slate-50/50">
+        
+        <!-- Mobile Header -->
+        <header class="md:hidden h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200">
+            <div class="font-bold text-slate-800">SmartAttendance-AI</div>
+            <button class="text-slate-500"><i class="fa-solid fa-bars text-xl"></i></button>
+        </header>
+
+        <!-- Content Container -->
+        <div id="main-content" class="p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
+            <!-- Dynamic Content Loaded Here -->
+        </div>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            
+            let icon = 'fa-check-circle';
+            let colorClass = 'text-green-600';
+            let borderClass = 'border-green-200';
+            let bgClass = 'bg-white/90';
+
+            if (type === 'error') {
+                icon = 'fa-circle-exclamation';
+                colorClass = 'text-red-500';
+                borderClass = 'border-red-200';
+            } else if (type === 'warning') {
+                icon = 'fa-triangle-exclamation';
+                colorClass = 'text-orange-500';
+                borderClass = 'border-orange-200';
+            } else if (type === 'info') {
+                icon = 'fa-circle-info';
+                colorClass = 'text-brand-500';
+                borderClass = 'border-brand-200';
+            }
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl-p shadow-xl border ${borderClass} ${bgClass} backdrop-blur-xl transform transition-all duration-300 translate-x-full opacity-0 min-w-[300px]`;
+            
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} ${colorClass} text-xl"></i>
+                <p class="text-sm font-bold text-slate-800 flex-1">${message}</p>
+                <button onclick="this.parentElement.remove()" class="ml-4 text-slate-400 hover:text-slate-700 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('translate-x-0', 'opacity-100');
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 4000);
+        }
+
+        // API Base URL
+        const API_BASE = "http://localhost:8080/api/admin";
+
+        // Headers helper function
+        function getHeaders() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+            }
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            };
+        }
+
+        // Logout logic
+        function logoutAdmin() {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        }
+
+        // Global State Arrays
+        let batches = [];
+        let students = [];
+        let facultyList = [];
+        let timetables = [];
+
+        // --- Navigation Configuration ---
+        const navItems = [
+            { id: 'batches', icon: 'fa-layer-group', label: 'Batch Management' },
+            { id: 'students', icon: 'fa-user-graduate', label: 'Student Management' },
+            { id: 'faculty', icon: 'fa-chalkboard-user', label: 'Faculty Management' },
+            { id: 'timetable', icon: 'fa-calendar-days', label: 'Timetable Management' }
+        ];
+
+        let currentView = 'batches'; // Defaults to batch management
+
+        // --- Render Sidebar ---
+        function renderSidebar() {
+            const navContainer = document.getElementById('sidebar-nav');
+            navContainer.innerHTML = navItems.map(item => `
+                <button onclick="switchView('${item.id}')" 
+                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl-p font-medium transition-all ${currentView === item.id 
+                        ? 'bg-brand-50 text-brand-600 shadow-sm ring-1 ring-brand-100/50' 
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'}">
+                    <i class="fa-solid ${item.icon} w-5 text-center"></i> 
+                    ${item.label}
+                </button>
+            `).join('');
+        }
+
+        // --- View Router ---
+        function switchView(viewId) {
+            currentView = viewId;
+            renderSidebar();
+            
+            const content = document.getElementById('main-content');
+            content.classList.remove('fade-in');
+            void content.offsetWidth;
+            content.classList.add('fade-in');
+
+            switch(viewId) {
+                case 'batches':
+                    content.innerHTML = getBatchMgmtHTML();
+                    initBatchManagement();
+                    break;
+                case 'students':
+                    content.innerHTML = getStudentMgmtHTML();
+                    initStudentManagement();
+                    break;
+                case 'faculty':
+                    content.innerHTML = getFacultyMgmtHTML();
+                    initFacultyManagement();
+                    break;
+                case 'timetable':
+                    content.innerHTML = getAdvancedTimetableHTML();
+                    initAdvancedTimetable();
+                    break;
+            }
+        }
+
+        // --- HTML Generators for Views ---
+
+        function getBatchMgmtHTML() {
+            return `
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900">Batch Management</h1>
+                        <p class="text-slate-500 mt-1">Create and manage academic batches/classes.</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl-p border border-white/60 shadow-glass mb-8">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><i class="fa-solid fa-layer-group text-sm"></i></div>
+                        Create New Batch
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Department</label>
+                            <input type="text" id="bDept" placeholder="e.g. CS" class="input-field uppercase">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Year</label>
+                            <input type="number" id="bYear" placeholder="e.g. 3" class="input-field">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Section</label>
+                            <input type="text" id="bSection" placeholder="e.g. A" class="input-field uppercase">
+                        </div>
+                        <div class="mb-0">
+                            <button id="addBatchBtn" class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-8 py-3 rounded-xl-p font-bold shadow-lg shadow-brand-500/30 transition-all hover:-translate-y-0.5">
+                                Create Batch
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl-p overflow-hidden border border-white/60 shadow-md">
+                    <div class="p-6 border-b border-slate-100 bg-white/40 backdrop-blur-sm">
+                        <h3 class="font-bold text-slate-800">All Batches</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4">Batch ID</th>
+                                    <th class="px-6 py-4">Batch Name</th>
+                                    <th class="px-6 py-4">Department</th>
+                                    <th class="px-6 py-4">Year</th>
+                                    <th class="px-6 py-4">Section</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchTable" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <tr><td colspan="6" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStudentMgmtHTML() {
+            return `
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900">Student Management</h1>
+                        <p class="text-slate-500 mt-1">Manage enrollments and student data.</p>
+                    </div>
+                    <div class="hidden sm:flex gap-4">
+                        <div class="glass-panel px-6 py-3 rounded-xl-p shadow-sm text-center">
+                            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total</p>
+                            <p class="text-xl font-bold text-slate-800" id="totalStudentsCount">0</p>
+                        </div>
+                        <div class="glass-panel px-6 py-3 rounded-xl-p shadow-sm text-center">
+                            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active</p>
+                            <p class="text-xl font-bold text-green-600" id="activeStudentsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl-p border border-white/60 shadow-glass mt-8">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><i class="fa-solid fa-user-plus text-sm"></i></div>
+                        Invite New Student
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Full Name</label>
+                            <input type="text" placeholder="Enter full name" class="input-field" id="sName">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Email Address</label>
+                            <input type="email" placeholder="student@email.com" class="input-field" id="sEmail">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Mobile Number</label>
+                            <input type="text" placeholder="+91 XXXXX XXXXX" class="input-field" id="sMobile">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Select Batch</label>
+                            <select id="sBatch" class="input-field text-slate-600 cursor-pointer">
+                                <option value="">Select Batch...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-right">
+                        <button id="addStudentBtn" class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-8 py-3 rounded-xl-p font-bold shadow-lg shadow-brand-500/30 transition-all hover:-translate-y-0.5">
+                            Send Registration Link
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl-p overflow-hidden border border-white/60 shadow-md mt-8">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/40 backdrop-blur-sm">
+                        <h3 class="font-bold text-slate-800">Invited Students</h3>
+                        <div class="relative w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="searchStudent" placeholder="Search..." class="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 py-4">Student Name</th>
+                                <th class="px-6 py-4">Batch</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTable" class="divide-y divide-slate-100 font-medium">
+                            <tr><td colspan="4" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function getFacultyMgmtHTML() {
+            return `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-slate-900">Faculty Management</h1>
+                    <p class="text-slate-500 mt-1">Manage teaching staff and assignments.</p>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl-p border border-white/60 mb-8 shadow-glass">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-envelope-open-text text-sm"></i></div>
+                        Invite Faculty
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">First Name</label>
+                            <input type="text" id="fFirstName" placeholder="John" class="input-field">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Last Name</label>
+                            <input type="text" id="fLastName" placeholder="Doe" class="input-field">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Email Address</label>
+                            <input type="email" id="fEmail" placeholder="faculty@uni.edu" class="input-field">
+                        </div>
+                        
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button id="addFacultyBtn" class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-8 py-3 rounded-xl-p font-bold hover:shadow-lg transition-all hover:-translate-y-0.5 whitespace-nowrap shadow-md">
+                            Send Invite
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl-p overflow-hidden border border-white/60 shadow-md">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 py-4">Faculty Name</th>
+                                <th class="px-6 py-4">Email Address</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="facultyTable" class="divide-y divide-slate-100 font-medium">
+                           <tr><td colspan="4" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function getAdvancedTimetableHTML() {
+            return `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-slate-900">Timetable Management</h1>
+                    <p class="text-slate-500 mt-1">Schedule lectures, assign faculty, and link physical classrooms.</p>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl-p border border-white/60 mb-8 shadow-glass">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><i class="fa-regular fa-calendar-plus text-sm"></i></div>
+                        Create Schedule
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Batch / Class</label>
+                            <select id="tBatch" class="input-field text-slate-600 cursor-pointer">
+                                <option value="">Select Batch...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Subject</label>
+                            <input type="text" id="tSubject" placeholder="e.g. Machine Learning" class="input-field">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Faculty</label>
+                            <select id="tFaculty" class="input-field text-slate-600 cursor-pointer">
+                                <option value="">Select Faculty...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Classroom</label>
+                            <input type="text" id="tClassroom" placeholder="e.g. Room 101" class="input-field">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Day of Week</label>
+                            <select id="tDay" class="input-field text-slate-600 cursor-pointer">
+                                <option value="MONDAY">Monday</option>
+                                <option value="TUESDAY">Tuesday</option>
+                                <option value="WEDNESDAY">Wednesday</option>
+                                <option value="THURSDAY">Thursday</option>
+                                <option value="FRIDAY">Friday</option>
+                                <option value="SATURDAY">Saturday</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Start Time</label>
+                            <input type="time" id="tStartTime" class="input-field text-slate-600">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">End Time</label>
+                            <input type="time" id="tEndTime" class="input-field text-slate-600">
+                        </div>
+                        <div class="flex items-end">
+                            <button id="saveTimetableBtn" class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-4 py-3 rounded-xl-p font-bold transition-all shadow-lg shadow-brand-500/30 hover:-translate-y-0.5">
+                                Save Timetable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl-p overflow-hidden border border-white/60 shadow-md">
+                    <div class="p-6 bg-slate-50/50 border-b border-slate-100 backdrop-blur-sm"><h4 class="font-bold text-slate-700">Current Schedule</h4></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-white/50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4">Batch</th>
+                                    <th class="px-6 py-4">Subject</th>
+                                    <th class="px-6 py-4">Faculty</th>
+                                    <th class="px-6 py-4">Classroom</th>
+                                    <th class="px-6 py-4">Day & Time</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timetableTableAdvanced" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* =========================================================
+           🚀 API BASED LOGIC (No localStorage for Data)
+           ========================================================= */
+
+        /* ---------- BATCH MANAGEMENT LOGIC ---------- */
+        async function fetchBatches() {
+            try {
+                const res = await fetch(`${API_BASE}/batches`, { headers: getHeaders() });
+                if (res.ok) {
+                    batches = await res.json();
+                }
+            } catch (err) {
+                console.error("Batch fetch error:", err);
+            }
+            renderBatches();
+        }
+
+        async function initBatchManagement() {
+            await fetchBatches();
+
+            const btn = document.getElementById('addBatchBtn');
+            if (btn) {
+                btn.onclick = async () => {
+                    const dept = document.getElementById('bDept').value.trim().toUpperCase();
+                    const year = document.getElementById('bYear').value.trim();
+                    const section = document.getElementById('bSection').value.trim().toUpperCase();
+
+                    if (!dept || !year || !section) {
+                        showToast("Please fill in all batch details.", "warning");
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    const origTxt = btn.innerText;
+                    btn.innerText = "Creating...";
+
+                    try {
+                        const response = await fetch(`${API_BASE}/batches`, {
+                            method: "POST",
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                department: dept,
+                                year: parseInt(year),
+                                section: section
+                            })
+                        });
+
+                        if (response.ok) {
+                            showToast("Batch created successfully.", "success");
+                            clearInputs(['bDept', 'bYear', 'bSection']);
+                            await fetchBatches(); // Refresh table
+                        } else {
+                            const errText = await response.text();
+                            showToast("Failed to create batch: " + errText, "error");
+                        }
+                    } catch (err) {
+                        showToast("Server connection failed. Please try again.", "error");
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = origTxt;
+                    }
+                };
+            }
+        }
+
+        function renderBatches() {
+            const tbody = document.getElementById('batchTable');
+            if (!tbody) return;
+
+            if (batches.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">No batches created yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = batches.map(b => {
+                const name = b.name || `${b.department}-${b.year}-${b.section}`;
+                return `
+                    <tr class="hover:bg-brand-50/30 transition-colors">
+                        <td class="px-6 py-4 font-mono text-brand-600">${b.id}</td>
+                        <td class="px-6 py-4 font-bold text-slate-800">${escapeHtml(name)}</td>
+                        <td class="px-6 py-4 text-slate-600">${escapeHtml(b.department)}</td>
+                        <td class="px-6 py-4 text-slate-600">Year ${escapeHtml(b.year)}</td>
+                        <td class="px-6 py-4 text-slate-600">Section ${escapeHtml(b.section)}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteItem(${b.id}, 'batch')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* ---------- STUDENT MANAGEMENT LOGIC ---------- */
+        async function fetchStudents() {
+            try {
+                const res = await fetch(`${API_BASE}/students`, { headers: getHeaders() });
+                if (res.ok) students = await res.json();
+            } catch(e) { console.error(e); }
+            renderStudents();
+        }
+
+        async function initStudentManagement() {
+            await fetchBatches();
+            await fetchStudents();
+
+            const batchSelect = document.getElementById('sBatch');
+            if (batchSelect) {
+                batchSelect.innerHTML = `<option value="">Select Batch...</option>` + 
+                    batches.map(b => `<option value="${b.id}">${escapeHtml(b.name || `${b.department}-${b.year}-${b.section}`)}</option>`).join('');
+            }
+
+            const btn = document.getElementById('addStudentBtn');
+            if (btn) {
+                btn.onclick = async () => {
+                    const fullName = document.getElementById('sName').value.trim();
+                    const email = document.getElementById('sEmail').value.trim();
+                    const mobile = document.getElementById('sMobile').value.trim();
+                    const selectedBatchId = batchSelect ? batchSelect.value : '';
+
+                    if (!fullName || !email || !mobile || !selectedBatchId) {
+                        showToast("Please fill all fields and select a batch.", "warning");
+                        return;
+                    }
+
+                    const nameParts = fullName.split(' ');
+                    const firstName = nameParts[0];
+                    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+                    btn.disabled = true;
+                    const origTxt = btn.innerText;
+                    btn.innerText = "Sending...";
+
+                    try {
+                        const response = await fetch(`${API_BASE}/students/invite`, {
+                            method: "POST",
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                firstName: firstName,
+                                lastName: lastName,
+                                email: email,
+                                mobile: mobile,
+                                batchId: parseInt(selectedBatchId)
+                            })
+                        });
+
+                        if (response.ok) {
+                            showToast("Student invitation sent successfully.", "success");
+                            clearInputs(['sName', 'sEmail', 'sMobile']);
+                            if(batchSelect) batchSelect.value = '';
+                            await fetchStudents();
+                        } else {
+                            const errText = await response.text();
+                            showToast("Error: " + errText, "error");
+                        }
+                    } catch (err) {
+                        showToast("Server connection failed. Please try again.", "error");
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = origTxt;
+                    }
+                };
+            }
+
+            const searchInput = document.getElementById('searchStudent');
+            if (searchInput) {
+                searchInput.oninput = (e) => { renderStudents(e.target.value.trim().toLowerCase()); }
+            }
+        }
+
+        function renderStudents(searchTerm = '') {
+            const tbody = document.getElementById('studentTable');
+            if (!tbody) return;
+
+            let filteredStudents = students;
+            if (searchTerm) {
+                filteredStudents = students.filter(s => {
+                    const displayName = s.firstName ? `${s.firstName} ${s.lastName || ''}`.trim() : (s.name || '');
+                    const displayBatch = (s.batch && s.batch.name) ? s.batch.name : (s.batchName || "Not Assigned");
+                    const hay = (displayName + ' ' + (s.email || '') + ' ' + displayBatch).toLowerCase();
+                    return hay.includes(searchTerm);
+                });
+            }
+
+            document.getElementById('totalStudentsCount').innerText = students.length;
+            document.getElementById('activeStudentsCount').innerText = students.filter(s => s.status === 'ACTIVE').length;
+
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">No students found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredStudents.map((s) => {
+                const statusBadge = s.status === 'INVITED'
+                    ? `<span class="bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-md border border-yellow-200 text-xs font-bold">Invited</span>`
+                    : `<span class="bg-green-50 text-green-700 px-2.5 py-1 rounded-md border border-green-200 text-xs font-bold">Active</span>`;
+
+                const displayName = s.firstName ? `${s.firstName} ${s.lastName || ''}`.trim() : (s.name || '');
+                const displayBatch = (s.batch && s.batch.name) ? s.batch.name : (s.batchName || "Not Assigned");
+
+                return `
+                    <tr class="hover:bg-brand-50/30 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-800">${escapeHtml(displayName)}<br><small class="text-xs text-slate-500 font-normal">${escapeHtml(s.email)}</small></td>
+                        <td class="px-6 py-4 text-slate-600">${escapeHtml(displayBatch)}</td>
+                        <td class="px-6 py-4">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteItem(${s.id}, 'student')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* ---------- FACULTY MANAGEMENT LOGIC ---------- */
+        async function fetchFaculty() {
+            try {
+                const res = await fetch(`${API_BASE}/faculty`, { headers: getHeaders() });
+                if (res.ok) facultyList = await res.json();
+            } catch(e) { console.error(e); }
+            renderFaculty();
+        }
+
+        async function initFacultyManagement() {
+            await fetchFaculty();
+
+            const btn = document.getElementById('addFacultyBtn');
+            if (btn) {
+                btn.onclick = async () => {
+                    const firstName = document.getElementById('fFirstName').value.trim();
+                    const lastName = document.getElementById('fLastName').value.trim();
+                    const email = document.getElementById('fEmail').value.trim();
+
+                    if (!firstName || !email) {
+                        showToast("Please fill in all faculty details.", "warning");
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    const origTxt = btn.innerText;
+                    btn.innerText = "Sending...";
+
+                    try {
+                        const response = await fetch(`${API_BASE}/faculty/invite`, {
+                            method: "POST",
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                firstName: firstName,
+                                lastName: lastName,
+                                email: email
+                            })
+                        });
+
+                        if (response.ok) {
+                            showToast("Faculty invitation sent successfully.", "success");
+                            clearInputs(['fFirstName', 'fLastName', 'fEmail']);
+                            await fetchFaculty();
+                        } else {
+                            const errText = await response.text();
+                            showToast("Error: " + errText, "error");
+                        }
+                    } catch (err) {
+                        showToast("Server connection failed. Please try again.", "error");
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = origTxt;
+                    }
+                };
+            }
+        }
+
+        function renderFaculty() {
+            const tbody = document.getElementById('facultyTable');
+            if (!tbody) return;
+
+            if (facultyList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400">No faculty available.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = facultyList.map((f) => {
+                const statusBadge = f.status === "INVITED"
+                    ? `<span class="bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-md border border-yellow-200 text-xs font-bold">Invited</span>`
+                    : `<span class="bg-green-50 text-green-700 px-2.5 py-1 rounded-md border border-green-200 text-xs font-bold">Active</span>`;
+
+                const displayName = f.firstName ? `${f.firstName} ${f.lastName || ''}`.trim() : (f.name || '');
+
+                return `
+                    <tr class="hover:bg-brand-50/30 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-800">${escapeHtml(displayName)}</td>
+                        <td class="px-6 py-4 text-slate-600">${escapeHtml(f.email)}</td>
+                        <td class="px-6 py-4">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteItem(${f.id}, 'faculty')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* ---------- TIMETABLE MANAGEMENT LOGIC ---------- */
+        async function fetchTimetables() {
+            try {
+                const res = await fetch(`${API_BASE}/timetables`, { headers: getHeaders() });
+                if (res.ok) timetables = await res.json();
+            } catch(e) { console.error(e); }
+            renderTimetables();
+        }
+
+        async function initAdvancedTimetable() {
+            await Promise.all([fetchBatches(), fetchFaculty(), fetchTimetables()]);
+
+            const batchSelect = document.getElementById('tBatch');
+            if(batchSelect) {
+                batchSelect.innerHTML = `<option value="">Select Batch...</option>` + 
+                    batches.map(b => `<option value="${b.id}">${escapeHtml(b.name || `${b.department}-${b.year}-${b.section}`)}</option>`).join('');
+            }
+
+            const facultySelect = document.getElementById('tFaculty');
+            if(facultySelect) {
+                facultySelect.innerHTML = `<option value="">Select Faculty...</option>` + 
+                    facultyList.map(f => {
+                        const displayName = f.firstName ? `${f.firstName} ${f.lastName || ''}`.trim() : f.name;
+                        return `<option value="${f.id}">${escapeHtml(displayName)}</option>`;
+                    }).join('');
+            }
+
+            const saveBtn = document.getElementById('saveTimetableBtn');
+            if(saveBtn) {
+                saveBtn.onclick = async () => {
+                    const batchId = document.getElementById('tBatch').value;
+                    const subject = document.getElementById('tSubject').value.trim();
+                    const facultyId = document.getElementById('tFaculty').value;
+                    const classroomName = document.getElementById('tClassroom').value.trim();
+                    const day = document.getElementById('tDay').value;
+                    const startTime = document.getElementById('tStartTime').value;
+                    const endTime = document.getElementById('tEndTime').value;
+
+                    if(!batchId || !subject || !facultyId || !classroomName || !startTime || !endTime) {
+                        showToast("Please fill in all timetable details.", "warning");
+                        return;
+                    }
+
+                    saveBtn.disabled = true;
+                    saveBtn.innerText = "Saving...";
+
+                    try {
+                        const response = await fetch(`${API_BASE}/timetables`, {
+                            method: "POST",
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                batchId: parseInt(batchId),
+                                subject: subject,
+                                facultyId: parseInt(facultyId),
+                                classroomName: classroomName,
+                                dayOfWeek: day,
+                                startTime: startTime,
+                                endTime: endTime
+                            })
+                        });
+
+                        if (response.ok) {
+                            clearInputs(['tSubject', 'tClassroom', 'tStartTime', 'tEndTime']);
+                            document.getElementById('tBatch').value = "";
+                            document.getElementById('tFaculty').value = "";
+                            showToast("Timetable saved successfully.", "success");
+                            await fetchTimetables();
+                        } else {
+                            showToast("Failed to save timetable.", "error");
+                        }
+                    } catch (err) {
+                        showToast("Server connection failed. Please try again.", "error");
+                    } finally {
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = "Save Timetable";
+                    }
+                };
+            }
+        }
+
+        function renderTimetables() {
+            const tbody = document.getElementById('timetableTableAdvanced');
+            if(!tbody) return;
+
+            if(timetables.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">No schedules created yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = timetables.map(t => `
+                <tr class="hover:bg-brand-50/30 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-800">${escapeHtml(t.batch?.name || t.batchName || '-')}</td>
+                    <td class="px-6 py-4 text-slate-700">${escapeHtml(t.subject)}</td>
+                    <td class="px-6 py-4 text-slate-600">${escapeHtml(
+                        t.faculty 
+                        ? `${t.faculty.firstName || ''} ${t.faculty.lastName || ''}`.trim()
+                        : (t.facultyName || '-')
+                    )}</td>
+                    <td class="px-6 py-4 text-slate-500 font-medium">${escapeHtml(t.classroomName)}</td>
+                    <td class="px-6 py-4 text-slate-600">${escapeHtml(t.dayOfWeek || t.day)} <br><span class="font-mono text-xs text-slate-400">${t.startTime} - ${t.endTime}</span></td>
+                    <td class="px-6 py-4"><span class="bg-green-50 text-green-700 px-2.5 py-1 rounded-md border border-green-200 text-xs font-bold uppercase tracking-wide">Scheduled</span></td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteItem(${t.id}, 'timetable')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /* ---------- SHARED FUNCTIONS ---------- */
+        // Generic delete using real backend API
+        async function deleteItem(id, type) {
+            if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+            
+            // Map types to endpoints
+            let endpoint = "";
+            if (type === 'batch') endpoint = "batches"; 
+            else if (type === 'student') endpoint = "students";
+            else if (type === 'faculty') endpoint = "faculty";
+            else if (type === 'timetable') endpoint = "timetables";
+
+            try {
+                const response = await fetch(`${API_BASE}/${endpoint}/${id}`, {
+                    method: "DELETE",
+                    headers: getHeaders()
+                });
+
+                if (response.ok) {
+                    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully.`, "success");
+                    // Refetch specific list after delete
+                    if (type === 'batch') fetchBatches();
+                    else if (type === 'student') fetchStudents();
+                    else if (type === 'faculty') fetchFaculty();
+                    else if (type === 'timetable') fetchTimetables();
+                } else {
+                    const err = await response.text();
+                    showToast(`Failed to delete. Error: ${err}`, "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Server connection failed. Please try again.", "error");
+            }
+        }
+
+        function clearInputs(elements) {
+            if (!elements || !elements.length) return;
+            elements.forEach(id => {
+                const el = typeof id === 'string' ? document.getElementById(id) : id;
+                if (el) try { el.value = ''; } catch(e){ /* noop */ }
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Initialize First View
+        document.addEventListener("DOMContentLoaded", function () {
+            switchView('batches'); // Default load
+        });
+    </script>
+</body>
+</html>

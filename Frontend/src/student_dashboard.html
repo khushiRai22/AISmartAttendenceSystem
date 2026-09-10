@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Smart Attendance-AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { brand: { 50:'#f0f9ff',100:'#e0f2fe',500:'#0ea5e9',600:'#0284c7',900:'#0c4a6e' } },
+                    animation: { 'scan':'scan 2s linear infinite', 'pulse-slow':'pulse-slow 8s infinite alternate' },
+                    keyframes: {
+                        scan: { '0%':{top:'0%'}, '100%':{top:'100%'} },
+                        'pulse-slow': { '0%':{transform:'scale(1)',opacity:'0.5'}, '100%':{transform:'scale(1.1)',opacity:'0.7'} }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color:#f8fafc; color:#0f172a; }
+        .glass-panel { background:rgba(255,255,255,0.85); backdrop-filter:blur(16px) saturate(180%); border:1px solid rgba(255,255,255,0.6); box-shadow:0 4px 20px rgba(0,0,0,0.03); }
+        .glass-sidebar { background:rgba(255,255,255,0.95); border-right:1px solid rgba(226,232,240,0.8); }
+        .blob-bg { position:absolute; filter:blur(90px); z-index:-1; opacity:0.5; animation:pulse-slow 8s infinite alternate; }
+        .face-outline { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:220px; height:280px; border:2px solid rgba(255,255,255,0.4); border-radius:45% 45% 40% 40%; box-shadow:0 0 0 999px rgba(0,0,0,0.5); z-index:10; }
+        .scan-line { position:absolute; width:100%; height:3px; background:#0ea5e9; box-shadow:0 0 15px #0ea5e9; animation:scan 1.8s ease-in-out infinite; z-index:11; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; font-weight:500; transition:all 0.2s; cursor:pointer; width:100%; text-align:left; }
+        .nav-item.active { background:#f0f9ff; color:#0ea5e9; font-weight:600; border:1px solid #e0f2fe; }
+        .nav-item:not(.active) { color:#64748b; }
+        .nav-item:not(.active):hover { background:#f8fafc; color:#1e293b; }
+        .page-section { display:none; }
+        .page-section.active { display:block; }
+        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+    </style>
+</head>
+<body class="antialiased h-screen flex overflow-hidden font-sans">
+
+<div class="blob-bg w-[600px] h-[600px] bg-blue-100 rounded-full -top-40 -left-40"></div>
+<div class="blob-bg w-[500px] h-[500px] bg-purple-100 rounded-full top-20 right-0"></div>
+
+<!-- SIDEBAR -->
+<aside class="hidden md:flex w-72 glass-sidebar flex-col h-full z-30 fixed left-0 top-0">
+    <div class="h-20 flex items-center gap-3 px-8 border-b border-slate-100 cursor-pointer" onclick="window.location.href='index.html'">
+        <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+            <i class="fa-solid fa-expand text-sm"></i>
+        </div>
+        <span class="font-bold text-lg text-slate-800">SmartAttendance<span class="text-brand-500">.ai</span></span>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-1">
+        <button onclick="showPage('dashboard')" id="nav-dashboard" class="nav-item active">
+            <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+        </button>
+        <button onclick="showPage('timetable')" id="nav-timetable" class="nav-item">
+            <i class="fa-solid fa-book w-5 text-center"></i> Courses & Timetable
+        </button>
+        <button onclick="showPage('history')" id="nav-history" class="nav-item">
+            <i class="fa-solid fa-file-invoice w-5 text-center"></i> Reports
+        </button>
+        <button onclick="showPage('profile')" id="nav-profile" class="nav-item">
+            <i class="fa-solid fa-user w-5 text-center"></i> Profile
+        </button>
+    </nav>
+    <div class="p-4 border-t border-slate-100">
+        <button onclick="doLogout()" class="nav-item hover:text-red-600 hover:bg-red-50">
+            <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+        </button>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 ml-0 md:ml-72 overflow-y-auto relative z-10">
+    <header class="md:hidden h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200">
+        <span class="font-bold text-slate-800">SmartAttendance.ai</span>
+        <button class="text-slate-500"><i class="fa-solid fa-bars text-xl"></i></button>
+    </header>
+
+    <div class="p-6 md:p-10">
+
+        <!-- ═══ PAGE 1: DASHBOARD ═══ -->
+        <div id="page-dashboard" class="page-section active space-y-8">
+
+            <!-- Header Card -->
+            <div class="glass-panel p-8 rounded-3xl relative overflow-hidden border border-white/60">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-br from-brand-100 to-purple-100 rounded-full opacity-50"></div>
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div class="space-y-2">
+                        <div id="session-badge" class="inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-clock"></i> Checking for live class...
+                        </div>
+                        <h1 id="session-subject" class="text-3xl font-bold text-slate-900">Welcome back!</h1>
+                        <p id="session-time" class="text-slate-500 font-medium"></p>
+                        <p id="session-info" class="text-sm text-slate-400 font-medium"></p>
+                    </div>
+                    <button onclick="openCameraModal()" id="mark-btn"
+                        class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-all hover:-translate-y-1 flex items-center gap-3">
+                        <i class="fa-solid fa-camera-retro"></i> Mark Attendance
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Present</p>
+                    <h3 id="stat-present" class="text-3xl font-bold text-green-600">—</h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Absent</p>
+                    <h3 id="stat-absent" class="text-3xl font-bold text-red-500">—</h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Total</p>
+                    <h3 id="stat-total" class="text-3xl font-bold text-slate-700">—</h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                    <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Percentage</p>
+                    <h3 id="stat-pct" class="text-3xl font-bold text-brand-500">—</h3>
+                </div>
+            </div>
+
+            <!-- Today's Classes -->
+            <div class="glass-panel rounded-3xl overflow-hidden border border-white/60">
+                <div class="p-6 border-b border-slate-100 bg-white/40">
+                    <h3 class="text-lg font-bold text-slate-800">Today's Classes</h3>
+                </div>
+                <div id="today-classes" class="divide-y divide-slate-100">
+                    <div class="p-6 text-center text-slate-400 text-sm">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ PAGE 2: TIMETABLE ═══ -->
+        <div id="page-timetable" class="page-section space-y-6">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-slate-800">Courses & Timetable</h2>
+                <span id="timetable-batch" class="bg-brand-50 text-brand-600 text-sm font-semibold px-4 py-2 rounded-xl border border-brand-100"></span>
+            </div>
+            <div class="glass-panel rounded-3xl overflow-hidden border border-white/60">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-100">
+                                <th class="px-6 py-4">Day</th>
+                                <th class="px-6 py-4">Subject</th>
+                                <th class="px-6 py-4">Faculty</th>
+                                <th class="px-6 py-4">Time</th>
+                                <th class="px-6 py-4">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timetable-body" class="divide-y divide-slate-100 text-sm">
+                            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">
+                                <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading timetable...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ PAGE 3: REPORTS / HISTORY ═══ -->
+        <div id="page-history" class="page-section space-y-6">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Attendance Reports</h2>
+                <div class="flex gap-3">
+                    <div id="report-stat-safe" class="bg-green-50 text-green-700 text-xs font-bold px-4 py-2 rounded-xl border border-green-200 hidden">
+                        ✅ SAFE — ≥75%
+                    </div>
+                    <div id="report-stat-warn" class="bg-yellow-50 text-yellow-700 text-xs font-bold px-4 py-2 rounded-xl border border-yellow-200 hidden">
+                        ⚠️ WARNING — <75%
+                    </div>
+                    <div id="report-stat-det" class="bg-red-50 text-red-700 text-xs font-bold px-4 py-2 rounded-xl border border-red-200 hidden">
+                        🚫 DETAINED — <60%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Bar -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/60">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="relative w-28 h-28 flex-shrink-0">
+                        <svg class="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                            <circle id="pct-circle" cx="50" cy="50" r="40" fill="none" stroke="#0ea5e9" stroke-width="10"
+                                stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="report-pct" class="text-2xl font-bold text-slate-800">—</span>
+                            <span class="text-xs text-slate-400">Attendance</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6 flex-1 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-green-600" id="rpt-present">—</p>
+                            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Present</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-red-500" id="rpt-absent">—</p>
+                            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Absent</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-slate-700" id="rpt-total">—</p>
+                            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Total</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Table -->
+            <div class="glass-panel rounded-3xl overflow-hidden border border-white/60">
+                <div class="p-6 border-b border-slate-100 bg-white/40">
+                    <h3 class="text-lg font-bold text-slate-800">Attendance History</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-100">
+                                <th class="px-6 py-4">Date</th>
+                                <th class="px-6 py-4">Subject</th>
+                                <th class="px-6 py-4">Check-in</th>
+                                <th class="px-6 py-4">ACI Score</th>
+                                <th class="px-6 py-4 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body" class="divide-y divide-slate-100 text-sm">
+                            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">
+                                <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ PAGE 4: PROFILE ═══ -->
+        <div id="page-profile" class="page-section space-y-6">
+            <h2 class="text-2xl font-bold text-slate-800">My Profile</h2>
+            <div class="glass-panel p-8 rounded-3xl border border-white/60">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <!-- Avatar -->
+                    <div class="flex-shrink-0 text-center">
+                        <div id="profile-avatar" class="w-28 h-28 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-brand-500/30 mx-auto">
+                            ?
+                        </div>
+                        <p id="profile-role" class="mt-3 text-xs font-bold uppercase tracking-wider text-brand-500 bg-brand-50 px-3 py-1 rounded-full border border-brand-100 inline-block">Student</p>
+                    </div>
+                    <!-- Info -->
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Full Name</label>
+                            <p id="profile-name" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Email</label>
+                            <p id="profile-email" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Roll Number</label>
+                            <p id="profile-roll" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Batch</label>
+                            <p id="profile-batch" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Mobile</label>
+                            <p id="profile-mobile" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Gender</label>
+                            <p id="profile-gender" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Date of Birth</label>
+                            <p id="profile-dob" class="text-lg font-semibold text-slate-800 mt-1">—</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Status</label>
+                            <p id="profile-status" class="text-lg font-semibold text-green-600 mt-1">—</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Attendance Summary on Profile -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/60">
+                <h3 class="font-bold text-slate-700 mb-4">Attendance Overview</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <p id="prof-present" class="text-2xl font-bold text-green-600">—</p>
+                        <p class="text-xs text-slate-500 mt-1">Present</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                        <p id="prof-absent" class="text-2xl font-bold text-red-500">—</p>
+                        <p class="text-xs text-slate-500 mt-1">Absent</p>
+                    </div>
+                    <div class="bg-brand-50 p-4 rounded-xl border border-brand-100">
+                        <p id="prof-pct" class="text-2xl font-bold text-brand-500">—</p>
+                        <p class="text-xs text-slate-500 mt-1">Percentage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /p-6 -->
+</main>
+
+<!-- FACE RECOGNITION MODAL -->
+<canvas id="face-canvas" width="640" height="480" style="display:none;"></canvas>
+<div id="camera-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/90 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+    <div class="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300" id="camera-content">
+        <div class="p-6 text-center border-b border-slate-100">
+            <div class="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 mx-auto mb-3">
+                <i class="fa-solid fa-face-viewfinder text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Biometric Verification</h3>
+            <p class="text-sm text-slate-500 mt-1">Please align your face within the frame</p>
+        </div>
+        <div class="relative bg-black h-80 w-full overflow-hidden">
+            <video id="webcam-feed" class="w-full h-full object-cover scale-x-[-1]" autoplay muted playsinline></video>
+            <div id="cam-placeholder" class="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-500 hidden">
+                <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
+                <p class="text-xs">Camera Loading...</p>
+            </div>
+            <div class="face-outline"><div class="scan-line"></div></div>
+            <div class="absolute bottom-6 left-0 right-0 text-center z-20">
+                <span id="scan-status" class="bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-mono tracking-wide border border-white/10">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Scanning...
+                </span>
+            </div>
+            <div id="success-overlay" class="absolute inset-0 bg-green-500 flex flex-col items-center justify-center z-30 hidden">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                    <i class="fa-solid fa-check text-4xl text-green-500"></i>
+                </div>
+                <h4 class="text-white text-2xl font-bold">Attendance Marked!</h4>
+                <p id="aci-result-text" class="text-green-100 text-sm mt-1">Verified Successfully</p>
+            </div>
+            <div id="fail-overlay" class="absolute inset-0 bg-red-500 flex flex-col items-center justify-center z-30 hidden">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                    <i class="fa-solid fa-xmark text-4xl text-red-500"></i>
+                </div>
+                <h4 class="text-white text-2xl font-bold">Verification Failed</h4>
+                <p id="fail-msg-text" class="text-red-100 text-sm mt-1 px-6 text-center">Please try again</p>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-50 flex justify-center">
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-sm font-medium hover:underline">
+                Cancel Verification
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="attendance-toast" class="fixed bottom-6 right-6 z-50 hidden px-6 py-4 rounded-2xl shadow-2xl text-white font-semibold text-sm max-w-sm">
+    <div class="flex items-center gap-3">
+        <i id="toast-icon" class="text-xl"></i>
+        <div>
+            <p id="toast-title" class="font-bold text-base"></p>
+            <p id="toast-msg" class="text-xs opacity-90 mt-0.5"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
+const BASE_URL = 'http://localhost:8080';
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'login.html';
+const getH = () => ({ 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' });
+
+let activeTimetableId = null;
+let stream = null;
+
+// ═══════════════════════════════════════════
+//  PAGE NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(page) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-' + page).classList.add('active');
+
+    if (page === 'history') loadHistory();
+    if (page === 'timetable') loadTimetable();
+    if (page === 'profile') loadProfile();
+}
+
+function doLogout() {
+    localStorage.clear();
+    window.location.href = 'login.html';
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD — load on page start
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+    try {
+        const res = await fetch(BASE_URL + '/api/student/dashboard', { headers: getH() });
+        if (!res.ok) return;
+        const d = await res.json();
+
+        // Stats
+        const present = d.presentClasses || 0;
+        const total   = d.totalClasses   || 0;
+        const absent  = total - present;
+        const pct     = d.attendancePercentage || 0;
+
+        document.getElementById('stat-present').textContent = present;
+        document.getElementById('stat-absent').textContent  = absent;
+        document.getElementById('stat-total').textContent   = total;
+        document.getElementById('stat-pct').textContent     = pct + '%';
+
+        // Today's classes
+        renderTodayClasses(d.todayClasses || []);
+
+        // Active session
+        const sessions = d.activeSessions || [];
+        if (sessions.length > 0) {
+            const s = sessions[0];
+            activeTimetableId = s.timetableId;
+            document.getElementById('session-badge').innerHTML =
+                '<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block"></span> LIVE SESSION';
+            document.getElementById('session-badge').className =
+                'inline-flex items-center gap-2 bg-red-50 text-red-600 text-xs font-bold px-3 py-1 rounded-full border border-red-200';
+            document.getElementById('session-subject').textContent = s.subject;
+            document.getElementById('session-time').innerHTML =
+                '<i class="fa-regular fa-clock mr-1 text-brand-500"></i> ' + s.startTime + ' – ' + s.endTime;
+            document.getElementById('session-info').innerHTML =
+                s.alreadyMarked
+                    ? '<i class="fa-solid fa-check-circle text-green-500 mr-1"></i> You have already marked attendance'
+                    : '<i class="fa-solid fa-info-circle text-brand-500 mr-1"></i> Faculty: ' + s.facultyName;
+            const markBtn = document.getElementById('mark-btn');
+            if (s.alreadyMarked) {
+                // Already marked — disable button
+                markBtn.disabled = true;
+                markBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                markBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Attendance Marked';
+            } else {
+                // Session active, not yet marked — ENABLE button
+                markBtn.disabled = false;
+                markBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                markBtn.innerHTML = '<i class="fa-solid fa-camera-retro"></i> Mark Attendance';
+            }
+        } else {
+            // No active session
+            activeTimetableId = null;
+            document.getElementById('session-badge').innerHTML = '<i class="fa-solid fa-moon mr-1"></i> No Active Class';
+            document.getElementById('session-badge').className =
+                'inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-bold px-3 py-1 rounded-full';
+            document.getElementById('session-subject').textContent = 'Hello, ' + (d.studentName || 'Student') + '!';
+            document.getElementById('session-time').textContent = 'No live class session right now.';
+            document.getElementById('session-info').textContent = 'Wait for faculty to start a session.';
+            const markBtn2 = document.getElementById('mark-btn');
+            markBtn2.disabled = true;
+            markBtn2.classList.add('opacity-50', 'cursor-not-allowed');
+            markBtn2.innerHTML = '<i class="fa-solid fa-camera-retro"></i> Mark Attendance';
+        }
+
+    } catch (e) {
+        console.error('Dashboard load error:', e);
+    }
+}
+
+function renderTodayClasses(classes) {
+    const container = document.getElementById('today-classes');
+    if (classes.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm">No classes scheduled for today.</div>';
+        return;
+    }
+    const statusColor = {
+        PRESENT:  'bg-green-50 text-green-700 border-green-200',
+        ABSENT:   'bg-red-50 text-red-600 border-red-200',
+        LIVE:     'bg-red-50 text-red-600 border-red-200',
+        UPCOMING: 'bg-blue-50 text-blue-600 border-blue-200',
+        DONE:     'bg-slate-50 text-slate-500 border-slate-200'
+    };
+    const statusIcon = {
+        PRESENT: 'fa-check-circle', ABSENT: 'fa-times-circle',
+        LIVE: 'fa-circle fa-beat', UPCOMING: 'fa-clock', DONE: 'fa-check'
+    };
+    container.innerHTML = classes.map(c => `
+        <div class="flex items-center justify-between p-5 hover:bg-slate-50/80 transition-colors">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                    <i class="fa-solid fa-book-open text-sm"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-slate-800">${c.subject}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">${c.facultyName} &bull; ${c.startTime} – ${c.endTime}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                ${c.aciScore ? `<span class="text-xs text-slate-400 font-mono">ACI: ${c.aciScore}</span>` : ''}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${statusColor[c.status] || statusColor.DONE}">
+                    <i class="fa-solid ${statusIcon[c.status] || 'fa-circle'} text-xs"></i> ${c.status}
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════
+//  TIMETABLE PAGE
+// ═══════════════════════════════════════════
+async function loadTimetable() {
+    try {
+        const res = await fetch(BASE_URL + '/api/student/timetable', { headers: getH() });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+
+        const meRes = await fetch(BASE_URL + '/api/student/me', { headers: getH() });
+        if (meRes.ok) {
+            const me = await meRes.json();
+            document.getElementById('timetable-batch').textContent = 'Batch: ' + (me.batchName || '');
+        }
+
+        const days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+        const dayColors = {
+            MONDAY:'bg-blue-50 text-blue-600', TUESDAY:'bg-purple-50 text-purple-600',
+            WEDNESDAY:'bg-green-50 text-green-600', THURSDAY:'bg-orange-50 text-orange-600',
+            FRIDAY:'bg-pink-50 text-pink-600', SATURDAY:'bg-slate-50 text-slate-600'
+        };
+        const tbody = document.getElementById('timetable-body');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No timetable available for your batch.</td></tr>';
+            return;
+        }
+        // Sort by day then time
+        const sorted = data.sort((a,b) => days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek));
+        tbody.innerHTML = sorted.map(t => `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-6 py-4">
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${dayColors[t.dayOfWeek] || 'bg-slate-50 text-slate-600'}">
+                        ${t.dayOfWeek}
+                    </span>
+                </td>
+                <td class="px-6 py-4 font-semibold text-slate-800">${t.subject}</td>
+                <td class="px-6 py-4 text-slate-500">${t.facultyName || '—'}</td>
+                <td class="px-6 py-4 font-mono text-slate-600 text-xs">${t.startTime} – ${t.endTime}</td>
+                <td class="px-6 py-4">
+                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg">${t.type || 'Theory'}</span>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('timetable-body').innerHTML =
+            '<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Failed to load timetable.</td></tr>';
+    }
+}
+
+// ═══════════════════════════════════════════
+//  REPORTS / HISTORY PAGE
+// ═══════════════════════════════════════════
+async function loadHistory() {
+    try {
+        // Load dashboard for summary stats
+        const dRes = await fetch(BASE_URL + '/api/student/dashboard', { headers: getH() });
+        if (dRes.ok) {
+            const d = await dRes.json();
+            const present = d.presentClasses || 0;
+            const total   = d.totalClasses   || 0;
+            const absent  = total - present;
+            const pct     = d.attendancePercentage || 0;
+
+            document.getElementById('rpt-present').textContent = present;
+            document.getElementById('rpt-absent').textContent  = absent;
+            document.getElementById('rpt-total').textContent   = total;
+            document.getElementById('report-pct').textContent  = pct + '%';
+
+            // Circular progress
+            const offset = 251.2 - (pct / 100 * 251.2);
+            document.getElementById('pct-circle').style.strokeDashoffset = offset;
+            const circleColor = pct >= 75 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+            document.getElementById('pct-circle').setAttribute('stroke', circleColor);
+
+            // Status badge
+            if (pct >= 75) { document.getElementById('report-stat-safe').classList.remove('hidden'); }
+            else if (pct >= 60) { document.getElementById('report-stat-warn').classList.remove('hidden'); }
+            else { document.getElementById('report-stat-det').classList.remove('hidden'); }
+        }
+
+        // Load history
+        const hRes = await fetch(BASE_URL + '/api/student/attendance/history', { headers: getH() });
+        if (!hRes.ok) throw new Error('Failed');
+        const history = await hRes.json();
+
+        const tbody = document.getElementById('history-body');
+        if (!history.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No attendance records yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = history.map(h => {
+            const statusCls = h.present
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-red-50 text-red-600 border-red-200';
+            const aciColor = !h.aciScore ? 'text-slate-400'
+                : h.aciLevel === 'HIGH' ? 'text-green-600 font-bold'
+                : h.aciLevel === 'MEDIUM' ? 'text-yellow-600 font-bold'
+                : 'text-red-500 font-bold';
+            return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-6 py-4 font-mono text-slate-500 text-xs">${h.attendanceDate || '—'}</td>
+                <td class="px-6 py-4 font-semibold text-slate-800">${h.subject}</td>
+                <td class="px-6 py-4 text-slate-500 font-mono text-xs">${h.checkInTime || '—'}</td>
+                <td class="px-6 py-4 ${aciColor}">${h.aciScore ? h.aciScore + ' (' + h.aciLevel + ')' : '—'}
+                    ${h.manualEntry ? '<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-lg border border-yellow-200">Manual</span>' : ''}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${statusCls}">
+                        ${h.present ? '✅ Present' : '❌ Absent'}
+                    </span>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        document.getElementById('history-body').innerHTML =
+            '<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Failed to load history.</td></tr>';
+    }
+}
+
+// ═══════════════════════════════════════════
+//  PROFILE PAGE
+// ═══════════════════════════════════════════
+async function loadProfile() {
+    try {
+        const res = await fetch(BASE_URL + '/api/student/me', { headers: getH() });
+        if (!res.ok) throw new Error('Failed');
+        const s = await res.json();
+
+        document.getElementById('profile-avatar').textContent = (s.firstName || '?')[0].toUpperCase();
+        document.getElementById('profile-name').textContent = (s.firstName || '') + ' ' + (s.lastName || '');
+        document.getElementById('profile-email').textContent = s.email || '—';
+        document.getElementById('profile-roll').textContent = s.rollNo || '—';
+        document.getElementById('profile-batch').textContent = s.batchName || '—';
+        document.getElementById('profile-mobile').textContent = s.mobile || '—';
+        document.getElementById('profile-gender').textContent = s.gender || '—';
+        document.getElementById('profile-dob').textContent = s.dob || '—';
+        document.getElementById('profile-status').textContent = s.status || 'ACTIVE';
+
+        // Attendance on profile
+        const dRes = await fetch(BASE_URL + '/api/student/dashboard', { headers: getH() });
+        if (dRes.ok) {
+            const d = await dRes.json();
+            const present = d.presentClasses || 0;
+            const total   = d.totalClasses   || 0;
+            document.getElementById('prof-present').textContent = present;
+            document.getElementById('prof-absent').textContent  = total - present;
+            document.getElementById('prof-pct').textContent     = (d.attendancePercentage || 0) + '%';
+        }
+    } catch (e) {
+        showToast('error', 'Error', 'Could not load profile');
+    }
+}
+
+// ═══════════════════════════════════════════
+//  FACE CHECK-IN
+// ═══════════════════════════════════════════
+const modal = document.getElementById('camera-modal');
+const modalContent = document.getElementById('camera-content');
+const video = document.getElementById('webcam-feed');
+const statusText = document.getElementById('scan-status');
+const canvas = document.getElementById('face-canvas');
+
+async function openCameraModal() {
+    if (!activeTimetableId) {
+        showToast('warning', 'No Active Class', 'No live session found right now.');
+        return;
+    }
+    document.getElementById('success-overlay').classList.add('hidden');
+    document.getElementById('fail-overlay').classList.add('hidden');
+    modal.classList.remove('hidden');
+    statusText.className = 'bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-mono tracking-wide border border-white/10';
+    statusText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Initializing Camera...';
+
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+    }, 10);
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        setTimeout(() => { statusText.innerHTML = '<i class="fa-solid fa-expand mr-2"></i> Scanning Face...'; }, 1500);
+        setTimeout(() => { statusText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Verifying Identity...'; }, 3000);
+        setTimeout(captureAndSubmit, 4000);
+    } catch (err) {
+        document.getElementById('cam-placeholder').classList.remove('hidden');
+        statusText.innerHTML = '<i class="fa-solid fa-video-slash mr-2"></i> Camera Access Denied';
+    }
+}
+
+async function captureAndSubmit() {
+    statusText.innerHTML = '<i class="fa-solid fa-location-dot fa-beat mr-2"></i> Getting GPS...';
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        statusText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Submitting...';
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async (blob) => {
+            try {
+                const formData = new FormData();
+                formData.append('faceImage', blob, 'face.jpg');
+                formData.append('timetableId', activeTimetableId);
+                formData.append('studentLatitude', pos.coords.latitude);
+                formData.append('studentLongitude', pos.coords.longitude);
+
+                const response = await fetch(BASE_URL + '/api/student/attendance/face-checkin', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('aci-result-text').textContent =
+                        'ACI: ' + result.aciScore + ' | ' + result.aciLevel;
+                    document.getElementById('success-overlay').classList.remove('hidden');
+                    showToast('success', 'Attendance Marked!', 'ACI: ' + result.aciScore + ' (' + result.aciLevel + ')');
+                    setTimeout(() => { closeModal(); loadDashboard(); }, 3000);
+                } else {
+                    // failReason based icon + message
+                    const reasons = {
+                        'FACE_MISMATCH':    { icon: 'fa-face-frown',      color: '#ef4444', title: 'Face Mismatch' },
+                        'GPS_OUT_OF_RANGE': { icon: 'fa-location-xmark',  color: '#f97316', title: 'Outside Classroom' },
+                        'WINDOW_CLOSED':    { icon: 'fa-clock',            color: '#8b5cf6', title: 'Time Window Closed' },
+                        'NO_PROFILE_PHOTO': { icon: 'fa-image-slash',      color: '#64748b', title: 'No Profile Photo' },
+                        'DUPLICATE':        { icon: 'fa-circle-check',     color: '#22c55e', title: 'Already Marked' },
+                        'NO_SESSION':       { icon: 'fa-door-closed',      color: '#94a3b8', title: 'No Active Session' },
+                    };
+                    const r = reasons[result.failReason] || { icon: 'fa-xmark', color: '#ef4444', title: 'Failed' };
+
+                    const failOverlay = document.getElementById('fail-overlay');
+                    failOverlay.style.background = r.color;
+
+                    // Icon update
+                    const iconBox = failOverlay.querySelector('.w-20 i');
+                    if (iconBox) { iconBox.className = 'fa-solid ' + r.icon + ' text-4xl'; iconBox.style.color = r.color; }
+
+                    // Title update
+                    const titleEl = failOverlay.querySelector('h4');
+                    if (titleEl) titleEl.textContent = r.title;
+
+                    // Detail message
+                    document.getElementById('fail-msg-text').textContent = result.message;
+
+                    // Extra info for face mismatch
+                    if (result.failReason === 'FACE_MISMATCH' && result.faceConfidence != null) {
+                        document.getElementById('fail-msg-text').textContent =
+                            'Match: ' + result.faceConfidence + '% (need 70%). ' +
+                            'Try better lighting or retake profile photo.';
+                    }
+
+                    // Extra info for GPS
+                    if (result.failReason === 'GPS_OUT_OF_RANGE' && result.gpsDistanceMeters != null) {
+                        document.getElementById('fail-msg-text').textContent =
+                            'You are ' + Math.round(result.gpsDistanceMeters) + 'm away from classroom. Move closer.';
+                    }
+
+                    failOverlay.classList.remove('hidden');
+                    showToast('error', r.title, result.message);
+                    setTimeout(closeModal, 4000);
+                }
+            } catch (e) {
+                document.getElementById('fail-msg-text').textContent = 'Server error. Try again.';
+                document.getElementById('fail-overlay').classList.remove('hidden');
+                setTimeout(closeModal, 3000);
+            }
+        }, 'image/jpeg', 0.9);
+    }, () => {
+        document.getElementById('fail-msg-text').textContent = 'GPS denied. Enable location access.';
+        document.getElementById('fail-overlay').classList.remove('hidden');
+        showToast('error', 'GPS Required', 'Enable location access.');
+        setTimeout(closeModal, 3000);
+    }, { timeout: 8000 });
+}
+
+function closeModal() {
+    modal.classList.add('opacity-0');
+    modalContent.classList.remove('scale-100');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        video.srcObject = null;
+    }, 300);
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+function showToast(type, title, message) {
+    const toast = document.getElementById('attendance-toast');
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-msg').textContent   = message;
+    const icon = document.getElementById('toast-icon');
+    toast.classList.remove('bg-green-500','bg-red-500','bg-yellow-500');
+    if (type==='success') { toast.classList.add('bg-green-500'); icon.className='fa-solid fa-circle-check text-xl'; }
+    else if (type==='error') { toast.classList.add('bg-red-500'); icon.className='fa-solid fa-circle-xmark text-xl'; }
+    else { toast.classList.add('bg-yellow-500'); icon.className='fa-solid fa-triangle-exclamation text-xl'; }
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4500);
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+loadDashboard();
+
+// Auto-refresh every 15 seconds
+// Detects: faculty starts session → Mark Attendance button activates
+// Detects: faculty ends session   → button disables, UI updates
+setInterval(loadDashboard, 15000);
+</script>
+</body>
+</html>

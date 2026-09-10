@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance-AI | Intelligent Vision for Education</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky Blue base
+                            600: '#0284c7', 
+                            900: '#0c4a6e',
+                            accent: '#f97316' // Orange accent
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'hero-glow': 'conic-gradient(from 180deg at 50% 50%, #e0f2fe 0deg, #f0f9ff 180deg, #e0f2fe 360deg)',
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                        'glass-hover': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles for iOS 26 Theme / Enhanced Glassmorphism */
+        body {
+            background-color: #f8fafc; /* Very light slate for contrast */
+            color: #0f172a;
+        }
+
+        /* Deep Glass Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Ambient Blobs */
+        .blob-bg {
+            position: absolute;
+            filter: blur(90px);
+            z-index: -1;
+            opacity: 0.6;
+            animation: pulse-slow 8s infinite alternate;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* Typography Gradient */
+        .text-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .text-gradient-accent {
+            background: linear-gradient(135deg, #0ea5e9 0%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Smooth reveal animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden relative selection:bg-brand-500 selection:text-white">
+
+    <!-- Background Ambient Blobs -->
+    <div class="blob-bg w-[600px] h-[600px] bg-blue-100 rounded-full -top-40 -left-20 mix-blend-multiply"></div>
+    <div class="blob-bg w-[500px] h-[500px] bg-purple-100 rounded-full top-20 -right-20 mix-blend-multiply animation-delay-2000"></div>
+    <div class="blob-bg w-[400px] h-[400px] bg-orange-50 rounded-full bottom-0 left-1/3 mix-blend-multiply animation-delay-4000"></div>
+
+    <!-- 1️⃣ NAVBAR -->
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center gap-3 cursor-pointer group" onclick="window.scrollTo(0,0)">
+                    <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-all duration-300">
+                        <i class="fa-solid fa-expand text-lg"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-slate-800">Smart Attendance<span class="text-brand-500">.ai</span></span>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#features" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-brand-600 rounded-full hover:bg-slate-50/50 transition-all">Features</a>
+                    <a href="#workflow" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-brand-600 rounded-full hover:bg-slate-50/50 transition-all">Workflow</a>
+                    <a href="#roles" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-brand-600 rounded-full hover:bg-slate-50/50 transition-all">Roles</a>
+                    <div class="pl-4">
+                        <a href="login.html" class="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2">
+                            Login <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="p-2 text-slate-600 hover:text-slate-900 focus:outline-none rounded-lg hover:bg-slate-100/50 transition-colors">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass-panel border-t border-white/50 absolute w-full backdrop-blur-3xl">
+            <div class="px-4 pt-4 pb-6 space-y-2">
+                <a href="#features" class="block px-4 py-3 text-base font-semibold text-slate-700 hover:text-brand-600 hover:bg-white/50 rounded-xl transition-all">Features</a>
+                <a href="#workflow" class="block px-4 py-3 text-base font-semibold text-slate-700 hover:text-brand-600 hover:bg-white/50 rounded-xl transition-all">Workflow</a>
+                <a href="#roles" class="block px-4 py-3 text-base font-semibold text-slate-700 hover:text-brand-600 hover:bg-white/50 rounded-xl transition-all">Roles</a>
+                <a href="attendance.html" class="block w-full text-center mt-6 bg-brand-600 text-white px-4 py-3.5 rounded-xl font-bold shadow-lg shadow-brand-500/20">
+                    Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2️⃣ HERO SECTION -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-white/50 shadow-sm backdrop-blur-md mb-8 reveal hover:bg-white/80 transition-colors cursor-default">
+                <span class="relative flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-bold text-slate-600 tracking-wide uppercase">AI-Powered System V2.0</span>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 leading-[1.1] reveal">
+                Revolutionize Your Classroom <br class="hidden md:block" />
+                with <span class="text-gradient-accent">Intelligent Vision</span>
+            </h1>
+
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500 reveal font-medium leading-relaxed">
+                Eliminate proxy attendance and manual logs. A secure, contactless, and scalable system designed for modern institutions using enterprise-grade deep learning.
+            </p>
+
+            <div class="mt-12 flex flex-col sm:flex-row justify-center gap-5 reveal">
+                <a href="login.html" class="group bg-brand-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-brand-500 transition-all shadow-xl shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-1">
+                    Get Started Now
+                </a>
+                <a href="#workflow" class="group bg-white/50 backdrop-blur-sm text-slate-700 border border-white/60 px-8 py-4 rounded-full text-lg font-bold hover:bg-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+                    See How It Works <i class="fa-solid fa-arrow-right ml-2 text-sm group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+
+            <!-- Feature Highlights -->
+            <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 reveal">
+                <div class="flex items-center justify-center gap-3 text-slate-600 font-semibold bg-white/40 py-3 rounded-2xl border border-white/40 backdrop-blur-sm">
+                    <i class="fa-solid fa-circle-check text-green-500"></i> 99.9% Accuracy
+                </div>
+                <div class="flex items-center justify-center gap-3 text-slate-600 font-semibold bg-white/40 py-3 rounded-2xl border border-white/40 backdrop-blur-sm">
+                    <i class="fa-solid fa-shield-halved text-blue-500"></i> Anti-Spoofing
+                </div>
+                <div class="flex items-center justify-center gap-3 text-slate-600 font-semibold bg-white/40 py-3 rounded-2xl border border-white/40 backdrop-blur-sm">
+                    <i class="fa-solid fa-bolt text-yellow-500"></i> Real-time Sync
+                </div>
+                <div class="flex items-center justify-center gap-3 text-slate-600 font-semibold bg-white/40 py-3 rounded-2xl border border-white/40 backdrop-blur-sm">
+                    <i class="fa-solid fa-lock text-purple-500"></i> JWT Secured
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3️⃣ HOW IT WORKS SECTION -->
+    <section id="workflow" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-20 reveal">
+                <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">How It Works</h2>
+                <p class="mt-4 text-slate-500 text-lg">Seamless integration from login to attendance marking.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+                <!-- Connecting Line (Desktop) -->
+                <div class="hidden lg:block absolute top-14 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-slate-200 to-transparent -z-10"></div>
+
+                <!-- Step 01 -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-glass-hover transition-all duration-500 group reveal hover:-translate-y-2">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md border border-slate-100 group-hover:scale-110 transition-transform relative z-10 mx-auto lg:mx-0">
+                        <i class="fa-solid fa-right-to-bracket text-brand-600"></i>
+                        <div class="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold border-4 border-white shadow-sm">01</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Authentication</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        User logs in securely via our JWT-based portal, ensuring role-based access for Students and Faculty with encrypted sessions.
+                    </p>
+                </div>
+
+                <!-- Step 02 -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-glass-hover transition-all duration-500 group reveal hover:-translate-y-2" style="transition-delay: 100ms;">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md border border-slate-100 group-hover:scale-110 transition-transform relative z-10 mx-auto lg:mx-0">
+                        <i class="fa-solid fa-expand text-brand-600"></i>
+                        <div class="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold border-4 border-white shadow-sm">02</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Biometric Scan</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        The system activates the camera to capture facial data and verifies liveness (blinking/movement) to prevent photo spoofing.
+                    </p>
+                </div>
+
+                <!-- Step 03 -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-glass-hover transition-all duration-500 group reveal hover:-translate-y-2" style="transition-delay: 200ms;">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md border border-slate-100 group-hover:scale-110 transition-transform relative z-10 mx-auto lg:mx-0">
+                        <i class="fa-solid fa-brain text-brand-600"></i>
+                        <div class="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold border-4 border-white shadow-sm">03</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">AI Validation</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        Captured face embeddings are compared against the encrypted vector database using high-speed deep learning models.
+                    </p>
+                </div>
+
+                <!-- Step 04 -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-glass-hover transition-all duration-500 group reveal hover:-translate-y-2" style="transition-delay: 300ms;">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md border border-slate-100 group-hover:scale-110 transition-transform relative z-10 mx-auto lg:mx-0">
+                        <i class="fa-solid fa-circle-check text-brand-600"></i>
+                        <div class="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold border-4 border-white shadow-sm">04</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Success</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        Attendance is marked instantly in the secure database, and a real-time confirmation toast is displayed to the user.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4️⃣ ADVANCED FEATURES SECTION -->
+    <section id="features" class="py-24 relative overflow-hidden bg-white/50 backdrop-blur-sm">
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-3xl mb-16 reveal">
+                <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">Advanced Features</h2>
+                <p class="mt-4 text-slate-500 text-lg">
+                    Our system uses cutting-edge Deep Learning models to ensure reliability, security, and ease of use for educational institutions.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Card 1 -->
+                <div class="glass-panel p-8 rounded-[2.5rem] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-default reveal">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Security</div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-3">Liveness Detection</h3>
+                    <p class="text-slate-500 leading-relaxed text-base">
+                        Prevents fraud by ensuring the person is physically present. The system detects micro-movements, depth, and texture to reject photos or video screens.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel p-8 rounded-[2.5rem] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-default reveal" style="transition-delay: 100ms;">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-orange-600 group-hover:text-white transition-colors duration-300">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div class="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Location</div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-3">Geofencing</h3>
+                    <p class="text-slate-500 leading-relaxed text-base">
+                        Restricts attendance marking to specific classroom coordinates only. Students must be within the virtual perimeter to mark presence, ensuring physical attendance.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-panel p-8 rounded-[2.5rem] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-default reveal" style="transition-delay: 200ms;">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div class="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Analytics</div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-3">Smart Analytics</h3>
+                    <p class="text-slate-500 leading-relaxed text-base">
+                        Generate automated weekly and monthly reports for faculty in one click. Identify attendance trends and at-risk students instantly with visual graphs.
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="glass-panel p-8 rounded-[2.5rem] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-default reveal" style="transition-delay: 300ms;">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                        </div>
+                        <div class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Mobile</div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-3">Cross-Platform</h3>
+                    <p class="text-slate-500 leading-relaxed text-base">
+                        Accessible from any device – Mobile, Tablet, or Desktop via web browser (PWA supported). No specialized hardware required, just a standard camera.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW SECTION: Roles -->
+    <section id="roles" class="py-24 bg-white/50 backdrop-blur-sm relative overflow-hidden">
+        <div class="blob-bg w-[500px] h-[500px] bg-sky-100 rounded-full bottom-0 right-0 mix-blend-multiply opacity-40"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">System Roles</h2>
+                <p class="mt-4 text-slate-500 text-lg">Designed for seamless collaboration across the institution.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Role 1: Student -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-xl transition-all duration-300 group reveal text-center hover:-translate-y-2">
+                    <div class="w-20 h-20 bg-brand-50 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all duration-300">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Student</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        View attendance stats, access course materials, and mark attendance securely using biometric verification.
+                    </p>
+                </div>
+
+                <!-- Role 2: Faculty -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-xl transition-all duration-300 group reveal text-center hover:-translate-y-2" style="transition-delay: 100ms;">
+                    <div class="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Faculty</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        Create classes, manage schedules, view real-time attendance reports, and handle student concerns.
+                    </p>
+                </div>
+
+                <!-- Role 3: Admin -->
+                <div class="glass-panel p-8 rounded-[2rem] hover:shadow-xl transition-all duration-300 group reveal text-center hover:-translate-y-2" style="transition-delay: 200ms;">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 text-slate-700 group-hover:bg-slate-800 group-hover:text-white transition-all duration-300">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Admin</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        Oversee the entire system, manage user roles, configure system settings, and access system-wide analytics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5️⃣ FOOTER -->
+    <footer class="bg-slate-50/80 backdrop-blur-xl border-t border-slate-200 pt-20 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <!-- Left -->
+                <div class="col-span-1 md:col-span-2 space-y-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-sm">
+                            <i class="fa-solid fa-expand"></i>
+                        </div>
+                        <span class="font-bold text-xl text-slate-900">Smart Attendance<span class="text-brand-500">.ai</span></span>
+                    </div>
+                    <p class="text-slate-500 text-sm leading-relaxed max-w-sm">
+                        Securing classrooms with intelligent vision technology. Built for the future of education, ensuring integrity and efficiency through AI.
+                    </p>
+                </div>
+
+                <!-- Middle -->
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-6">Platform</h4>
+                    <ul class="space-y-4 text-sm text-slate-500 font-medium">
+                        <li><a href="#" class="hover:text-brand-600 transition-colors">Faculty Login</a></li>
+                        <li><a href="#" class="hover:text-brand-600 transition-colors">Student Portal</a></li>
+                        <li><a href="#" class="hover:text-brand-600 transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-brand-600 transition-colors">API Reference</a></li>
+                    </ul>
+                </div>
+
+                <!-- Right -->
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-6">Contact</h4>
+                    <ul class="space-y-4 text-sm text-slate-500">
+                        <li class="flex items-center gap-3 group">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-envelope text-xs"></i>
+                            </div>
+                            support@smartattendance.com
+                        </li>
+                        <li class="flex items-center gap-3 group">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-phone text-xs"></i>
+                            </div>
+                            +91 98765 43210
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-xs text-slate-400 font-medium">
+                    &copy; 2025 Smart Attendance AI. Final Year Project. All rights reserved.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-brands fa-github text-xl"></i></a>
+                    <a href="#" class="text-slate-400 hover:text-blue-600 transition-colors"><i class="fa-brands fa-linkedin text-xl"></i></a>
+                    <a href="#" class="text-slate-400 hover:text-sky-500 transition-colors"><i class="fa-brands fa-twitter text-xl"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Interactivity -->
+    <script>
+        // Mobile Menu Toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+
+        // Smooth Reveal Animation on Scroll
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 100;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        // Trigger once on load
+        reveal();
+    </script>
+</body>
+</html>

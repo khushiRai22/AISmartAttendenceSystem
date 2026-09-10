@@ -1,0 +1,4 @@
+Haar Cascade XML is bundled inside openpnp opencv jar (pom.xml dependency).
+Location inside jar: /org/opencv/data/haarcascade_frontalface_default.xml
+FaceRecognitionService.extractHaarCascade() automatically extracts it at runtime.
+No manual download needed.

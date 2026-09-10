@@ -1,0 +1,45 @@
+# =========================
+# Frontend
+# =========================
+Frontend/node_modules/
+Frontend/dist/
+
+# =========================
+# Java / Maven
+# =========================
+Backend/SmartAttendanceAI/target/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# Spring Boot local config
+application-local.properties
+application-local.yml
+
+# =========================
+# IDE
+# =========================
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Face storage / uploaded files
+# =========================
+faces/

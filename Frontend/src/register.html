@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Smart Attendance-AI</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky Blue Base
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            accent: '#f97316' // Orange Accent
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                        'glass-hover': '0 12px 40px 0 rgba(31, 38, 135, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Theme */
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Ambient Blobs */
+        .blob-bg {
+            position: absolute;
+            filter: blur(90px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: pulse-slow 8s infinite alternate;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem; /* Left padding for icon */
+            border-radius: 1rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            color: #334155;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+        .input-field::placeholder {
+            color: #94a3b8;
+        }
+        .input-field:disabled {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+            color: #94a3b8;
+        }
+
+        /* Icon Position */
+        .input-wrapper {
+            position: relative;
+        }
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+        }
+        .input-wrapper:focus-within .input-icon {
+            color: #0ea5e9;
+        }
+
+        /* Profile Uploader */
+        .profile-upload {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #f0f9ff;
+            border: 2px dashed #0ea5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s;
+        }
+        .profile-upload:hover {
+            background-color: #e0f2fe;
+            border-color: #0284c7;
+        }
+        .profile-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="antialiased h-screen flex overflow-hidden selection:bg-brand-500 selection:text-white font-sans">
+
+    <!-- Ambient Background -->
+    <div class="blob-bg w-[600px] h-[600px] bg-brand-100 rounded-full -top-40 -left-40 mix-blend-multiply"></div>
+    <div class="blob-bg w-[500px] h-[500px] bg-purple-100 rounded-full top-20 right-0 mix-blend-multiply animation-delay-2000"></div>
+    <div class="blob-bg w-[400px] h-[400px] bg-orange-50 rounded-full bottom-0 left-20 mix-blend-multiply animation-delay-4000"></div>
+
+    <div class="w-full h-full flex relative z-10">
+        
+        <!-- LEFT PANEL (Branding) -->
+        <div class="hidden lg:flex w-5/12 bg-slate-900 text-white flex-col justify-center p-12 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 z-0"></div>
+            
+            <div class="relative z-10 flex flex-col h-full justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-expand text-lg"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">Smart Attendance<span class="text-brand-500">.ai</span></span>
+                </div>
+
+                <div class="my-auto">
+                    <h1 class="text-5xl font-extrabold leading-tight mb-6 tracking-tight">Start Your <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-purple-400">Academic Journey</span></h1>
+                    <p class="text-slate-400 text-lg mb-8 leading-relaxed max-w-md">
+                        Seamlessly track your attendance, verify your identity securely, and manage your academic profile with our AI-powered ecosystem.
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                            <div class="w-10 h-10 bg-brand-500/20 rounded-full flex items-center justify-center text-brand-400 mb-3">
+                                <i class="fa-solid fa-face-smile text-xl"></i>
+                            </div>
+                            <h4 class="font-bold text-sm">AI Face ID</h4>
+                            <p class="text-xs text-slate-400 mt-1">Secure Biometric Login</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
+                            <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-400 mb-3">
+                                <i class="fa-solid fa-shield-halved text-xl"></i>
+                            </div>
+                            <h4 class="font-bold text-sm">Encrypted Data</h4>
+                            <p class="text-xs text-slate-400 mt-1">Privacy First Approach</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500">© 2026 Smart Attendance-AI. All Rights Reserved.</div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL (Form) -->
+        <div class="w-full lg:w-7/12 flex items-center justify-center p-4 relative bg-white/50 backdrop-blur-sm">
+            <div class="w-full max-w-2xl h-full flex flex-col pt-6 pb-6">
+                
+                <div class="mb-6 px-4">
+                    <h2 class="text-3xl font-bold text-slate-900">Create Account</h2>
+                    <p class="text-slate-500 text-sm mt-1">Enter your details to generate your <span id="roleLabel" class="font-bold text-brand-500">Student</span> profile.</p>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-4 pr-2 custom-scroll">
+                    <form id="registerForm" onsubmit="handleRegistration(event)" class="space-y-6 pb-4">
+                        
+                        <!-- Profile Section -->
+                        <div class="flex items-center gap-6">
+                            <div class="profile-upload" onclick="document.getElementById('profilePic').click()">
+                                <i class="fa-solid fa-camera text-2xl text-brand-500" id="uploadIcon"></i>
+                                <img id="preview" class="profile-preview hidden">
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-700 uppercase mb-1">Profile Photo</h3>
+                                <p class="text-xs text-slate-500 mb-2">Upload a clear front-facing photo.</p>
+                                <input type="file" id="profilePic" class="hidden" accept="image/*" onchange="previewImage(this)">
+                                <button type="button" onclick="document.getElementById('profilePic').click()" class="text-xs font-bold text-brand-600 hover:text-brand-700">Click to upload</button>
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+
+                        <!-- Personal Details -->
+                        <div class="grid grid-cols-12 gap-4">
+                            <div class="col-span-3 sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Title</label>
+                                <div class="input-wrapper">
+                                    <select id="title" class="input-field pl-3 bg-white cursor-pointer" required>
+                                        <option>Mr.</option>
+                                        <option>Ms.</option>
+                                        <option>Mx.</option>
+                                        <option>Dr.</option>
+                                        <option>Prof.</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-span-9 sm:col-span-4">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">First Name</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-user input-icon"></i>
+                                    <input type="text" id="firstName" class="input-field pl-10" placeholder="John" required>
+                                </div>
+                            </div>
+                            <div class="col-span-6 sm:col-span-3">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Middle Name</label>
+                                <input type="text" id="middleName" class="input-field pl-4" placeholder="">
+                            </div>
+                            <div class="col-span-6 sm:col-span-3">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Last Name</label>
+                                <input type="text" id="lastName" class="input-field pl-4" placeholder="Doe" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Date of Birth</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-regular fa-calendar input-icon"></i>
+                                    <input type="date" id="dob" class="input-field pl-10 text-slate-500" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Gender</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-venus-mars input-icon"></i>
+                                    <select id="gender" class="input-field pl-10 cursor-pointer bg-white" required>
+                                        <option value="" disabled selected>Select</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Details -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Email Address <i class="fa-solid fa-lock text-xs text-brand-500 ml-1"></i></label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-envelope input-icon"></i>
+                                    <input type="email" id="email" disabled class="input-field pl-10 bg-slate-50 text-slate-500 cursor-not-allowed border-slate-200">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Mobile Number</label>
+                                <div class="input-wrapper relative">
+                                    <i class="fa-solid fa-phone input-icon"></i>
+                                    <span class="absolute left-10 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500 border-r border-slate-200 pr-2 h-5 flex items-center">+91</span>
+                                    <input type="tel" id="mobile" class="input-field pl-24" placeholder="98765 43210" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+
+                        <!-- DYNAMIC FIELDS: Student Details -->
+                        <div id="studentFields" class="col-span-12">
+                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">University Roll Number</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-id-card input-icon"></i>
+                                <input type="text" id="rollNo" class="input-field pl-10 font-mono text-brand-600 font-bold" placeholder="2024-CS-XXX">
+                            </div>
+                        </div>
+
+                        <!-- DYNAMIC FIELDS: Faculty Details -->
+                        <div id="facultyFields" class="col-span-12 hidden">
+                            <h3 class="text-sm font-bold text-slate-700 uppercase mb-3 pb-1">Faculty Details</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Employee ID</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-id-badge input-icon"></i>
+                                        <input type="text" id="employeeId" class="input-field pl-10 font-mono text-brand-600 font-bold" placeholder="EMP-001">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Department</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-building input-icon"></i>
+                                        <input type="text" id="department" class="input-field pl-10" placeholder="Computer Science">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Designation</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-user-tie input-icon"></i>
+                                        <input type="text" id="designation" class="input-field pl-10" placeholder="Professor">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Experience (Yrs)</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-briefcase input-icon"></i>
+                                        <input type="number" id="experience" class="input-field pl-10" placeholder="5" min="0">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Joining Date</label>
+                                    <div class="input-wrapper">
+                                        <i class="fa-solid fa-calendar-check input-icon"></i>
+                                        <input type="date" id="joiningDate" class="input-field pl-10 text-slate-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Create Password</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-key input-icon"></i>
+                                    <input type="password" id="password" class="input-field pl-10" placeholder="••••••••" required>
+                                    <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-500" onclick="togglePassword('password', this)"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Confirm Password</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-shield-halved input-icon"></i>
+                                    <input type="password" id="confirmPassword" class="input-field pl-10" placeholder="••••••••" required>
+                                    <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-500" onclick="togglePassword('confirmPassword', this)"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submission -->
+                        <div class="pt-6 border-t border-slate-200">
+                            <label class="flex items-center gap-2 mb-6 cursor-pointer">
+                                <input type="checkbox" required class="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500">
+                                <span class="text-sm text-slate-600">I agree to the <a href="#" class="text-brand-600 font-bold hover:underline">Terms & Privacy Policy</a></span>
+                            </label>
+
+                            <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-brand-600 hover:shadow-brand-500/20 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2">
+                                Complete Registration <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==============================
+        // 🔐 Get Token & Role from URL
+        // ==============================
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+        const role = (urlParams.get("role") || "STUDENT").toUpperCase(); // Defaults to STUDENT
+        const emailParam = urlParams.get("email") || "user@university.edu";
+
+        // DOM Elements
+        const studentFields = document.getElementById("studentFields");
+        const rollNoInput = document.getElementById("rollNo");
+        
+        const facultyFields = document.getElementById("facultyFields");
+        const employeeIdInput = document.getElementById("employeeId");
+        const departmentInput = document.getElementById("department");
+        const designationInput = document.getElementById("designation");
+        const experienceInput = document.getElementById("experience");
+        const joiningDateInput = document.getElementById("joiningDate");
+
+        // UI Initialization — fixed role detection
+        function initForm() {
+            const emailEl = document.getElementById('email');
+            if (emailEl) emailEl.value = emailParam;
+
+            if (role === "FACULTY") {
+                const roleLabel = document.getElementById("roleLabel");
+                if (roleLabel) roleLabel.innerText = "Faculty";
+
+                // Hide Student Fields
+                if (studentFields) studentFields.classList.add("hidden");
+                if (rollNoInput) { rollNoInput.disabled = true; rollNoInput.required = false; }
+
+                // Show Faculty Fields
+                if (facultyFields) facultyFields.classList.remove("hidden");
+                if (employeeIdInput) employeeIdInput.required = true;
+                if (departmentInput) departmentInput.required = true;
+                if (designationInput) designationInput.required = true;
+                if (experienceInput) experienceInput.required = true;
+                if (joiningDateInput) joiningDateInput.required = true;
+
+            } else {
+                // STUDENT — default
+                const roleLabel = document.getElementById("roleLabel");
+                if (roleLabel) roleLabel.innerText = "Student";
+                if (studentFields) studentFields.classList.remove("hidden");
+                if (facultyFields) facultyFields.classList.add("hidden");
+                if (rollNoInput) { rollNoInput.required = true; rollNoInput.disabled = false; }
+            }
+        }
+
+        // Run immediately or on DOMContentLoaded depending on timing
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initForm);
+        } else {
+            initForm();
+        }
+
+        // ==============================
+        // 👁 Password Toggle
+        // ==============================
+        function togglePassword(id, icon) {
+            const input = document.getElementById(id);
+            input.type = input.type === "password" ? "text" : "password";
+            icon.classList.toggle("fa-eye");
+            icon.classList.toggle("fa-eye-slash");
+        }
+
+        // ==============================
+        // 🖼 Image Preview
+        // ==============================
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('preview').classList.remove('hidden');
+                    document.getElementById('uploadIcon').classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ==============================
+        // 🚀 REAL REGISTRATION
+        // ==============================
+        async function handleRegistration(e) {
+            e.preventDefault();
+
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (password !== confirmPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            const fileInput = document.getElementById("profilePic");
+            if (!fileInput.files[0]) {
+                alert("Profile photo is required!");
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalBtnContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append("token", token);
+            formData.append("title", document.getElementById("title").value);
+            formData.append("firstName", document.getElementById("firstName").value);
+            formData.append("middleName", document.getElementById("middleName").value);
+            formData.append("lastName", document.getElementById("lastName").value);
+            formData.append("dob", document.getElementById("dob").value);
+            formData.append("gender", document.getElementById("gender").value);
+            formData.append("mobile", document.getElementById("mobile").value);
+            formData.append("password", password);
+            formData.append("profilePic", fileInput.files[0]);
+
+            // Append Role-Specific Data safely to FormData
+            if (role === "STUDENT") {
+                formData.append("rollNo", rollNoInput.value);
+            } else if (role === "FACULTY") {
+                formData.append("employeeId", employeeIdInput.value);
+                formData.append("department", departmentInput.value);
+                formData.append("designation", designationInput.value);
+                formData.append("experience", experienceInput.value);
+                formData.append("joiningDate", joiningDateInput.value);
+            }
+
+            try {
+                const response = await fetch("http://localhost:8080/api/auth/register", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorMsg = await response.text();
+                    alert("Registration failed: " + errorMsg);
+                    throw new Error("Registration Failed");
+                }
+
+                alert("Registration Successful!");
+                window.location.href = "login.html";
+
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

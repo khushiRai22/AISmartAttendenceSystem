@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard | Smart Attendance-AI</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Configuration for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            accent: '#f97316'
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.05)',
+                        'glass-hover': '0 12px 40px 0 rgba(31, 38, 135, 0.15)',
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                    },
+                    borderRadius: {
+                        'xl-p': '1rem',
+                        '2xl-p': '1.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #f8fafc; color: #0f172a; overflow: hidden; }
+        
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-right: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        /* Ambient Blobs */
+        .blob-bg {
+            position: absolute;
+            filter: blur(90px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: pulse-slow 8s infinite alternate;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* View Switching Transitions */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            color: #334155;
+        }
+        .input-field:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Slider Styling */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #0ea5e9; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px;
+        }
+        
+        #map { z-index: 10; border-radius: 1rem; }
+    </style>
+</head>
+<body class="antialiased h-screen flex selection:bg-brand-500 selection:text-white font-sans">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Ambient Background -->
+    <div class="blob-bg w-[600px] h-[600px] bg-brand-100 rounded-full -top-40 -left-40 mix-blend-multiply"></div>
+    <div class="blob-bg w-[500px] h-[500px] bg-purple-100 rounded-full top-20 right-0 mix-blend-multiply animation-delay-2000"></div>
+    <div class="blob-bg w-[400px] h-[400px] bg-orange-50 rounded-full bottom-0 left-20 mix-blend-multiply animation-delay-4000"></div>
+
+    <!-- 1️⃣ LEFT SIDEBAR -->
+    <aside class="hidden md:flex w-72 glass-sidebar flex-col h-full z-30 transition-all duration-300 relative shadow-xl">
+        <!-- Logo -->
+        <div class="h-20 flex items-center gap-3 px-8 border-b border-slate-100 cursor-pointer" onclick="window.location.reload()">
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                <i class="fa-solid fa-expand text-sm"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-800 tracking-tight">SmartAttendance<span class="text-brand-500">.ai</span></span>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <button onclick="switchTab('schedule')" id="nav-schedule" class="w-full flex items-center gap-3 px-4 py-3 bg-brand-50 text-brand-600 rounded-xl font-semibold transition-all border border-brand-100 shadow-sm">
+                <i class="fa-solid fa-calendar w-5 text-center"></i> My Schedule
+            </button>
+            <button onclick="switchTab('live')" id="nav-live" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl font-medium transition-all" disabled>
+                <i class="fa-solid fa-tower-broadcast w-5 text-center"></i> Live Class
+            </button>
+            <button onclick="openManualModal()" id="nav-manual" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl font-medium transition-all">
+                <i class="fa-solid fa-clipboard-user w-5 text-center"></i> Manual Entry
+            </button>
+            <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl font-medium transition-all">
+                <i class="fa-solid fa-file-invoice w-5 text-center"></i> Reports
+            </button>
+        </nav>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-slate-100">
+            <div class="flex items-center gap-3 mb-4 px-2">
+                <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">FA</div>
+                <div>
+                    <p class="text-sm font-bold text-slate-800">Faculty Panel</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wide">Instructor</p>
+                </div>
+            </div>
+            <button onclick="showToast('Logging out...', 'info'); setTimeout(()=>window.location.href='index.html', 1000);" class="flex items-center gap-3 w-full px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl-p font-medium transition-all">
+                <i class="fa-solid fa-right-from-bracket w-5"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- 2️⃣ MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto overflow-x-hidden relative z-10">
+        
+        <!-- Mobile Header -->
+        <header class="md:hidden h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200">
+            <div class="font-bold text-slate-800 flex items-center gap-2">
+                <div class="w-6 h-6 bg-brand-500 rounded flex items-center justify-center text-white text-xs"><i class="fa-solid fa-expand"></i></div>
+                SmartAttendance
+            </div>
+            <button class="text-slate-500"><i class="fa-solid fa-bars text-xl"></i></button>
+        </header>
+
+        <div class="p-6 md:p-10 max-w-7xl mx-auto w-full">
+            
+            <!-- ================= VIEW 1: MY SCHEDULE (TABLE FORMAT) ================= -->
+            <div id="view-schedule" class="fade-in space-y-6">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900">My Schedule</h1>
+                        <p class="text-slate-500 mt-1">Select a class to initialize geo-fencing and start attendance.</p>
+                    </div>
+                    <button onclick="fetchTimetable()" class="hidden sm:flex bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl shadow-sm hover:bg-slate-50 transition-colors items-center gap-2 font-medium text-sm">
+                        <i class="fa-solid fa-rotate-right"></i> Sync
+                    </button>
+                </div>
+
+                <div class="glass-panel rounded-2xl-p overflow-hidden border border-white/60 shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm" id="schedule-table">
+                            <thead class="bg-slate-50/80 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4">Day & Time</th>
+                                    <th class="px-6 py-4">Subject</th>
+                                    <th class="px-6 py-4">Batch</th>
+                                    <th class="px-6 py-4">Classroom</th>
+                                    <th class="px-6 py-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <!-- JS Injected -->
+                                <tr><td colspan="5" class="text-center py-10 text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Loading schedule...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW 2: LIVE SESSION SCREEN ================= -->
+            <div id="view-live" class="hidden fade-in space-y-6">
+                
+                <!-- NEW DESIGN: TOP INFO CARD -->
+                <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-soft flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200 uppercase tracking-wide flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> LIVE SESSION
+                            </span>
+                            <span class="text-slate-400 text-sm font-medium" id="live-batch-name">| Batch</span>
+                        </div>
+                        
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight" id="live-subject-name">Subject Name</h1>
+                            <p class="text-brand-500 font-medium mt-1 text-sm flex items-center gap-2">
+                                <i class="fa-regular fa-clock"></i> <span id="live-time-window">10:00 AM – 10:50 AM</span>
+                            </p>
+                        </div>
+                        
+                        <p class="text-sm text-slate-500 font-medium pt-1">
+                            <i class="fa-solid fa-circle-info text-brand-500 mr-1"></i> Geo-fence Active. Radius: <span id="live-radius" class="font-bold text-slate-700">0m</span>
+                        </p>
+                    </div>
+
+                    <!-- End Session Button -->
+                    <div>
+                        <button onclick="endSession()" class="w-full md:w-auto bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 rounded-xl font-bold shadow-md shadow-brand-500/20 transition-all flex items-center justify-center gap-2">
+                            End Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEW DESIGN: ATTENDANCE SUMMARY -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Present Card -->
+                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center gap-5">
+                        <div class="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-500 text-2xl">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-4xl font-extrabold text-slate-800 leading-none" id="stat-present">0</h3>
+                            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1.5">Present</p>
+                        </div>
+                    </div>
+
+                    <!-- Absent Card -->
+                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center gap-5">
+                        <div class="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-red-500 text-2xl">
+                            <i class="fa-solid fa-user-xmark"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-4xl font-extrabold text-slate-800 leading-none" id="stat-absent">-</h3>
+                            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1.5">Absent</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW DESIGN: LIVE ATTENDANCE LOG TABLE -->
+                <div class="bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm">
+                    <div class="p-6 md:p-8 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-50">
+                        <h3 class="text-xl font-bold text-slate-900">Live Attendance Log</h3>
+                        
+                        <!-- Search Bar -->
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Search by Roll No." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all placeholder:text-slate-400">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm" id="attendance-table">
+                            <thead class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider font-bold border-b border-slate-100">
+                                <tr>
+                                    <th class="px-8 py-4">Roll Number</th>
+                                    <th class="px-8 py-4">Student Name</th>
+                                    <th class="px-8 py-4">Check-in Time</th>
+                                    <th class="px-8 py-4 text-center">
+                                        ACI Score
+                                        <span class="ml-1 text-slate-400 cursor-help" title="Attendance Confidence Index: weighted score of GPS proximity (40%), face match (45%), and check-in timing (15%). HIGH ≥80 | MEDIUM ≥55 | LOW ≥35 | SUSPICIOUS &lt;35">ⓘ</span>
+                                    </th>
+                                    <th class="px-8 py-4 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm font-medium text-slate-700" id="live-attendance-tbody">
+                                <tr><td colspan="5" class="text-center py-10 text-slate-400">Waiting for students to scan in...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================= VIEW 3: REPORTS ================= -->
+            <div id="view-reports" class="hidden fade-in space-y-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">Attendance Reports</h1>
+                    <p class="text-slate-500 mt-1">View batch-wise attendance percentage and daily records.</p>
+                </div>
+
+                <!-- Batch Selector -->
+                <div class="glass-panel p-5 rounded-2xl border border-white/60 flex flex-wrap gap-4 items-end">
+                    <div class="flex-1 min-w-48">
+                        <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Select Batch</label>
+                        <select id="report-batch-select" onchange="loadBatchReport()"
+                            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="">-- Select Batch --</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-48">
+                        <label class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Select Date (Daily Report)</label>
+                        <input type="date" id="report-date" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <button onclick="loadDailyReport()"
+                        class="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day"></i> Daily Report
+                    </button>
+                </div>
+
+                <!-- Report Summary Cards -->
+                <div id="report-summary-cards" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Students</p>
+                        <h3 id="rpt-total-students" class="text-2xl font-bold text-slate-700">—</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Safe (≥75%)</p>
+                        <h3 id="rpt-safe-count" class="text-2xl font-bold text-green-600">—</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Warning (≥60%)</p>
+                        <h3 id="rpt-warn-count" class="text-2xl font-bold text-yellow-500">—</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border border-white/60">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Detained (<60%)</p>
+                        <h3 id="rpt-det-count" class="text-2xl font-bold text-red-500">—</h3>
+                    </div>
+                </div>
+
+                <!-- Report Table -->
+                <div class="glass-panel rounded-3xl overflow-hidden border border-white/60">
+                    <div class="p-5 border-b border-slate-100 bg-white/40 flex justify-between items-center">
+                        <h3 id="report-table-title" class="font-bold text-slate-800">Select a batch to view report</h3>
+                        <span id="report-loading" class="text-xs text-slate-400 hidden"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Loading...</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-100" id="report-thead">
+                                    <th class="px-6 py-4">Roll No</th>
+                                    <th class="px-6 py-4">Student Name</th>
+                                    <th class="px-6 py-4">Total</th>
+                                    <th class="px-6 py-4">Present</th>
+                                    <th class="px-6 py-4">Absent</th>
+                                    <th class="px-6 py-4 text-right">Attendance %</th>
+                                    <th class="px-6 py-4 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-table-body" class="divide-y divide-slate-100 text-sm">
+                                <tr><td colspan="7" class="px-6 py-10 text-center text-slate-400">Select a batch above to see the report.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 🌟 MODAL 1: START SESSION & GEO CONFIG -->
+    <div id="geo-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl border border-white/20 transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]" id="geo-modal-content">
+            
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Start Session</h3>
+                    <p class="text-sm text-slate-500 mt-1">Configure geo-fencing for <span id="gm-subject" class="font-bold text-brand-600">Subject</span></p>
+                </div>
+                <button onclick="closeGeoModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-6 mt-6 overflow-y-auto pr-2 custom-scroll flex-1">
+                <!-- Location Info -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 shadow-inner">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </div>
+                    <div class="text-sm font-mono text-slate-600 flex-1" id="geo-coords">
+                        <i class="fa-solid fa-spinner fa-spin text-brand-500 mr-2"></i> Fetching GPS...
+                    </div>
+                </div>
+
+                <!-- Leaflet Map Preview -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden relative shadow-inner">
+                    <div id="map" class="w-full h-48 bg-slate-100"></div>
+                    <!-- Map Overlay if GPS fails -->
+                    <div id="map-overlay" class="absolute inset-0 bg-slate-900/10 backdrop-blur-sm z-[400] flex items-center justify-center hidden">
+                        <span class="bg-white text-red-500 px-4 py-2 rounded-full text-xs font-bold shadow-md"><i class="fa-solid fa-triangle-exclamation"></i> GPS Required</span>
+                    </div>
+                </div>
+
+                <!-- Radius Slider -->
+                <div>
+                    <div class="flex justify-between items-end mb-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Acceptable Radius</label>
+                        <span id="radius-display" class="font-mono text-sm font-bold text-white bg-slate-900 px-3 py-1 rounded-lg shadow-sm">40m</span>
+                    </div>
+                    <input type="range" id="radius-input" min="10" max="200" value="40" oninput="updateRadius(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                    <div class="flex justify-between mt-2 text-[10px] text-slate-400 font-bold px-1">
+                        <span>10m</span>
+                        <span>200m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-100 flex gap-3">
+                <button onclick="closeGeoModal()" class="flex-1 bg-white border border-slate-200 text-slate-600 py-3.5 rounded-xl-p font-bold hover:bg-slate-50 transition-colors">Cancel</button>
+                <button id="confirm-start-btn" onclick="confirmStartSession()" disabled class="flex-1 bg-brand-600 text-white py-3.5 rounded-xl-p font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-play mr-2"></i> Start
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌟 MODAL 2: MANUAL ATTENDANCE EXCEPTION -->
+    <div id="manual-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl border border-white/20 transform scale-95 transition-transform duration-300" id="manual-modal-content">
+            
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Manual Entry</h3>
+                    <p class="text-sm text-slate-500 mt-1">Mark attendance exceptions.</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                </div>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Select Batch</label>
+                    <select id="m-batch" class="input-field cursor-pointer font-medium text-slate-700">
+                        <option value="">Choose...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Subject</label>
+                    <select id="m-subject" class="input-field cursor-pointer font-medium text-slate-700">
+                        <option value="">Choose...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Date</label>
+                    <input type="date" id="m-date" class="input-field font-mono text-slate-600">
+                </div>
+                <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl flex gap-3 items-start">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                    <p class="text-xs text-blue-800 font-medium leading-relaxed">Manual entries bypass geo-fencing and are marked as 'Exception' in reports for audit purposes.</p>
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeManualModal()" class="flex-1 bg-white border border-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">Cancel</button>
+                <button onclick="submitManualAttendance()" id="submit-manual-btn" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 shadow-lg hover:shadow-slate-900/20 transition-all">
+                    Submit Entry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- UI & Logic Script -->
+    <script>
+        /* ==========================================================
+           FACULTY DASHBOARD LOGIC 
+           ========================================================== */
+
+        const API_BASE = "http://localhost:8080/api/faculty";
+        
+        // --- 1. AUTH GUARD ---
+        const token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "login.html";
+        }
+        
+        // Safe Parse User ID (Demo defaults to 2 if parsing fails)
+       let facultyId = null;
+
+async function loadFacultyProfile() {
+    try {
+        const res = await fetch(`${API_BASE}/me`, {
+            headers: getHeaders()
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            facultyId = data.id;
+            console.log("Faculty ID:", facultyId);
+        }
+    } catch (e) {
+        console.error("Failed to load faculty profile");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadFacultyProfile();
+    switchTab('schedule');
+});
+
+        // --- GLOBAL STATE ---
+        let loadedTimetables = [];
+        let activeSessionTimetableId = null;
+        let currentGeo = { lat: null, lng: null };
+        let livePollInterval = null;
+        let map = null;
+        let mapMarker = null;
+        let mapCircle = null;
+        let currentTimetableId = null;
+        let autoCloseInterval = null;
+
+        function getHeaders() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+            }
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            };
+        }
+
+        // --- TOAST UI ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            let icon = 'fa-check-circle'; let colorClass = 'text-green-600'; let borderClass = 'border-green-200';
+            if (type === 'error') { icon = 'fa-circle-exclamation'; colorClass = 'text-red-500'; borderClass = 'border-red-200'; }
+            else if (type === 'warning') { icon = 'fa-triangle-exclamation'; colorClass = 'text-orange-500'; borderClass = 'border-orange-200'; }
+            else if (type === 'info') { icon = 'fa-circle-info'; colorClass = 'text-brand-500'; borderClass = 'border-brand-200'; }
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl-p shadow-xl border ${borderClass} bg-white/95 backdrop-blur-xl transform transition-all duration-300 translate-x-full opacity-0 z-50`;
+            toast.innerHTML = `<i class="fa-solid ${icon} ${colorClass} text-xl"></i><p class="text-sm font-bold text-slate-800 flex-1">${message}</p>`;
+            container.appendChild(toast);
+
+            setTimeout(() => { toast.classList.remove('translate-x-full', 'opacity-0'); toast.classList.add('translate-x-0', 'opacity-100'); }, 10);
+            setTimeout(() => { 
+                toast.classList.remove('translate-x-0', 'opacity-100'); toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Navigation ---
+        function switchTab(tabId) {
+            ['schedule','live','reports'].forEach(id => {
+                const v = document.getElementById('view-' + id);
+                if (v) v.classList.add('hidden');
+            });
+            ['nav-schedule','nav-reports'].forEach(id => {
+                const n = document.getElementById(id);
+                if (n) n.className = "w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl font-medium transition-all";
+            });
+            if (!document.getElementById('nav-live').disabled) {
+                document.getElementById('nav-live').className = "w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl font-medium transition-all";
+            }
+
+            const activeClass = "w-full flex items-center gap-3 px-4 py-3 bg-brand-50 text-brand-600 rounded-xl font-semibold transition-all border border-brand-100 shadow-sm";
+            if (tabId === 'schedule') {
+                document.getElementById('view-schedule').classList.remove('hidden');
+                document.getElementById('nav-schedule').className = activeClass;
+                fetchTimetable();
+            } else if (tabId === 'live') {
+                document.getElementById('view-live').classList.remove('hidden');
+                document.getElementById('nav-live').className = activeClass;
+            } else if (tabId === 'reports') {
+                document.getElementById('view-reports').classList.remove('hidden');
+                document.getElementById('nav-reports').className = activeClass;
+                loadReportBatches();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+
+        // --- Table Search Logic ---
+        function filterTable() {
+            const input = document.getElementById("table-search");
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById("attendance-table");
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                const tdRoll = tr[i].getElementsByTagName("td")[0]; 
+                const tdName = tr[i].getElementsByTagName("td")[1]; 
+                if (tdName || tdRoll) {
+                    const txtValueName = tdName.textContent || tdName.innerText;
+                    const txtValueRoll = tdRoll.textContent || tdRoll.innerText;
+                    if (txtValueName.toUpperCase().indexOf(filter) > -1 || txtValueRoll.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        // --- 1. LOAD TIMETABLE (TABLE FORMAT) ---
+        async function fetchTimetable() {
+            const container = document.getElementById("schedule-table-body");
+            container.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Loading schedule...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/timetable`, {
+                                             headers: getHeaders()
+                                                                 });
+                if (!res.ok) throw new Error("Failed to load timetable");
+                loadedTimetables = await res.json();
+                renderTimetable(loadedTimetables);
+            } catch(e) {
+                container.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500"><i class="fa-solid fa-circle-exclamation"></i> Error loading timetable</td></tr>`;
+                showToast("Failed to fetch timetable.", "error");
+            }
+        }
+
+        function renderTimetable(data) {
+            const container = document.getElementById("schedule-table-body");
+            if (!data || data.length === 0) {
+                container.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-500">No classes scheduled.</td></tr>';
+                return;
+            }
+
+            container.innerHTML = data.map(t => `
+                <tr class="hover:bg-brand-50/30 transition-colors">
+                    <td class="px-6 py-4">
+                        <span class="font-bold text-slate-800 uppercase">${escapeHtml(t.dayOfWeek || t.day)}</span><br>
+                        <span class="text-xs font-mono text-slate-500"><i class="fa-regular fa-clock"></i> ${t.startTime} - ${t.endTime}</span>
+                    </td>
+                    <td class="px-6 py-4 font-bold text-slate-800">${escapeHtml(t.subject)}</td>
+                    <td class="px-6 py-4 text-slate-600">${escapeHtml(t.batch?.name || t.batchName || '-')}</td>
+                    <td class="px-6 py-4 text-slate-500 font-medium">${escapeHtml(t.classroomName)}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="openGeoModal(${t.id})" class="bg-white border border-slate-200 text-slate-800 hover:border-brand-500 hover:text-brand-600 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 inline-flex group">
+                            Start <i class="fa-solid fa-play text-slate-400 group-hover:text-brand-500 transition-colors"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- 2. START SESSION (GEO LOGIC) ---
+        function openGeoModal(id) {
+            currentTimetableId = id;
+            const t = loadedTimetables.find(x => x.id === id);
+            
+            if (!t) {
+                showToast("Timetable not found.", "error");
+                return;
+            }
+            
+            document.getElementById('gm-subject').innerText = t.subject;
+            
+            const modal = document.getElementById('geo-modal');
+            const content = document.getElementById('geo-modal-content');
+            const btn = document.getElementById('confirm-start-btn');
+            const coordText = document.getElementById('geo-coords');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+
+            btn.disabled = true;
+            document.getElementById('map-overlay').classList.remove('hidden');
+            coordText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-500 mr-2"></i> Fetching GPS...';
+
+            // Fetch Location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentGeo.lat = position.coords.latitude;
+                        currentGeo.lng = position.coords.longitude;
+                        
+                        coordText.innerHTML = `<span class="text-green-600 font-bold">Lat:</span> ${currentGeo.lat.toFixed(5)} <span class="mx-2 text-slate-300">|</span> <span class="text-green-600 font-bold">Lng:</span> ${currentGeo.lng.toFixed(5)}`;
+                        document.getElementById('map-overlay').classList.add('hidden');
+                        btn.disabled = false;
+                        
+                        initMap(currentGeo.lat, currentGeo.lng, parseInt(document.getElementById('radius-input').value));
+                    },
+                    (error) => {
+                        coordText.innerHTML = `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Location Denied/Error</span>`;
+                        showToast("Location access is required to start a session.", "error");
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                coordText.innerText = "Browser does not support Geolocation";
+            }
+        }
+
+        function closeGeoModal() {
+            if (map) {
+                map.remove();
+                map = null;
+                mapMarker = null;
+                mapCircle = null;
+            }
+            
+            document.getElementById('geo-modal-content').classList.add('scale-95');
+            document.getElementById('geo-modal').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('geo-modal').classList.add('hidden'), 300);
+            currentTimetableId = null;
+        }
+
+        // Leaflet Map Logic
+        function initMap(lat, lng, radius) {
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('map', { zoomControl: false }).setView([lat, lng], 18);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap',
+                        maxZoom: 20
+                    }).addTo(map);
+
+                    const facultyIcon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div style="background-color:#0ea5e9; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.4);"></div>`,
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+
+                    mapMarker = L.marker([lat, lng], {icon: facultyIcon}).addTo(map);
+                    mapCircle = L.circle([lat, lng], {
+                        color: '#0ea5e9',
+                        fillColor: '#0ea5e9',
+                        fillOpacity: 0.15,
+                        weight: 2,
+                        radius: radius
+                    }).addTo(map);
+                } else {
+                    map.setView([lat, lng], 18);
+                    mapMarker.setLatLng([lat, lng]);
+                    mapCircle.setLatLng([lat, lng]);
+                    mapCircle.setRadius(radius);
+                    map.invalidateSize(); 
+                }
+            }, 100);
+        }
+
+        function updateRadius(val) {
+            document.getElementById('radius-display').innerText = val + 'm';
+            if (mapCircle) {
+                mapCircle.setRadius(parseInt(val));
+            }
+        }
+
+        async function confirmStartSession() {
+            if (!currentGeo.lat || !currentGeo.lng) {
+                showToast("Location not available.", "error");
+                return;
+            }
+            
+            const btn = document.getElementById('confirm-start-btn');
+            const radius = document.getElementById('radius-input').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Starting...';
+
+            try {
+                const res = await fetch(`${API_BASE}/attendance/start-session`, {
+                    method: "POST",
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        timetableId: currentTimetableId,
+                        facultyId: facultyId,
+                        latitude: currentGeo.lat,
+                        longitude: currentGeo.lng,
+                        radiusMeters: parseInt(radius)
+                    })
+                });
+
+                if (res.ok) {
+                    activeSessionTimetableId = currentTimetableId;
+                    showToast("Session Active! Live mode enabled.", "success");
+                    setupLiveView(currentTimetableId, radius);
+                    closeGeoModal();
+                } else {
+                    // Even on error — try to recover by opening live view
+                    // (Backend now auto-closes old session, so retry once)
+                    const errText = await res.text();
+                    try {
+                        // Retry start session once
+                        const retry = await fetch(`${API_BASE}/attendance/start-session`, {
+                            method: "POST",
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                timetableId: currentTimetableId,
+                                facultyId: facultyId,
+                                latitude: currentGeo.lat,
+                                longitude: currentGeo.lng,
+                                radiusMeters: parseInt(radius)
+                            })
+                        });
+                        if (retry.ok) {
+                            activeSessionTimetableId = currentTimetableId;
+                            showToast("Session Started!", "success");
+                            setupLiveView(currentTimetableId, radius);
+                            closeGeoModal();
+                        } else {
+                            showToast("Failed to start session. Please try again.", "error");
+                        }
+                    } catch(retryErr) {
+                        showToast("Server error. Please try again.", "error");
+                    }
+                }
+            } catch(e) {
+                showToast("Server error. Try again.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Start Session';
+            }
+        }
+
+        // --- 3. LIVE VIEW PREP & POLLING ---
+        function setupLiveView(tId, radius) {
+            activeSessionTimetableId = tId; // Bind global state explicitly
+            const t = loadedTimetables.find(x => x.id === tId);
+            if (t) {
+                document.getElementById('live-subject-name').innerText = t.subject;
+                document.getElementById('live-batch-name').innerText = `| ${t.batch?.name || t.batchName || 'Batch'}`;
+                document.getElementById('live-time-window').innerText = `${t.startTime} - ${t.endTime}`;
+                document.getElementById('live-radius').innerText = radius + 'm';
+            }
+
+            document.getElementById('nav-live').disabled = false;
+            switchTab('live');
+
+            if (livePollInterval) clearInterval(livePollInterval);
+            fetchLiveAttendance(tId); 
+            livePollInterval = setInterval(() => fetchLiveAttendance(tId), 5000);
+
+            autoCloseCheck(t);
+        }
+
+        async function fetchLiveAttendance(tId) {
+            try {
+                const res = await fetch(`${API_BASE}/attendance/live/${tId}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderLiveLog(data.presentList, data.totalEnrolled);
+                }
+            } catch(e) { console.error("Poll error", e); }
+        }
+
+        function renderLiveLog(presentList, totalEnrolled) {
+            const tbody = document.getElementById('live-attendance-tbody');
+
+            let presentCount = presentList ? presentList.length : 0;
+            let total = totalEnrolled || 0;
+            let absentCount = (total > 0 && total >= presentCount) ? (total - presentCount) : '-';
+
+            document.getElementById('stat-present').innerText = presentCount;
+            document.getElementById('stat-absent').innerText = absentCount;
+
+            if (!presentList || presentList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-10 text-slate-400 font-medium">
+                            Waiting for students to scan in...
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = presentList.map(record => {
+                const sName = record.studentName || '-';
+                const sRoll = record.rollNo || '-';
+
+                let timeStr = '-';
+                if(record.checkInTime) {
+                    const d = new Date(record.checkInTime);
+                    timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
+                }
+
+                // ACI badge — colour-coded by level
+                let aciBadge = '<span class="text-slate-400 text-xs font-medium">—</span>';
+                if (record.aciScore != null) {
+                    const level = (record.aciLevel || '').toUpperCase();
+                    const score = record.aciScore.toFixed(1);
+                    const configs = {
+                        HIGH:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', label: 'HIGH' },
+                        MEDIUM:     { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-500',    label: 'MEDIUM' },
+                        LOW:        { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400',   label: 'LOW' },
+                        SUSPICIOUS: { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     dot: 'bg-red-500',     label: 'SUSPICIOUS' },
+                    };
+                    const cfg = configs[level] || configs.MEDIUM;
+                    aciBadge = `
+                        <div class="inline-flex flex-col items-center gap-1">
+                            <span class="text-slate-700 font-bold text-sm tabular-nums">${score}</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text} text-xs font-bold border ${cfg.border}">
+                                <span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span>${cfg.label}
+                            </span>
+                        </div>`;
+                }
+
+                return `
+                    <tr class="hover:bg-brand-50/30 transition-colors group">
+                        <td class="px-8 py-5 font-mono text-slate-600 group-hover:text-brand-600 transition-colors">#${escapeHtml(sRoll)}</td>
+                        <td class="px-8 py-5 text-slate-800 font-bold">${escapeHtml(sName)}</td>
+                        <td class="px-8 py-5 text-slate-500 font-mono">${timeStr}</td>
+                        <td class="px-8 py-5 text-center">${aciBadge}</td>
+                        <td class="px-8 py-5 text-right">
+                            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-200 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Present
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- 4. END SESSION ---
+        async function endSession() {
+            if(!activeSessionTimetableId) return;
+            if(!confirm("Are you sure you want to end this attendance session? Students will no longer be able to mark attendance.")) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/attendance/end-session?timetableId=${activeSessionTimetableId}`, {
+                    method: "POST",
+                    headers: getHeaders()
+                });
+
+                if (res.ok) {
+                    showToast("Session closed successfully.", "info");
+                    clearInterval(livePollInterval);
+                    if (autoCloseInterval) clearInterval(autoCloseInterval);
+                    
+                    document.getElementById('nav-live').disabled = true;
+                    switchTab('schedule');
+
+        // On page reload — check if a session was already active (recovery)
+        async function checkExistingSession() {
+            try {
+                const res = await fetch(`${API_BASE}/timetable`, { headers: getHeaders() });
+                if (!res.ok) return;
+                const timetables = await res.json();
+                for (const t of timetables) {
+                    const sRes = await fetch(`http://localhost:8080/api/faculty/attendance/session-status?timetableId=${t.id}`, { headers: getHeaders() });
+                    if (sRes.ok) {
+                        const s = await sRes.json();
+                        if (s && s.active) {
+                            activeSessionTimetableId = t.id;
+                            document.getElementById('nav-live').disabled = false;
+                            showToast('You have an active session: ' + t.subject, 'info');
+                            break;
+                        }
+                    }
+                }
+            } catch(e) { /* silent */ }
+        }
+        checkExistingSession();
+                    activeSessionTimetableId = null;
+                } else {
+                    showToast("Failed to close session.", "error");
+                }
+            } catch(e) {
+                showToast("Server error.", "error");
+            }
+        }
+
+        function autoCloseCheck(timetable) {
+            if (autoCloseInterval) {
+                clearInterval(autoCloseInterval);
+            }
+            
+            if(!timetable || !timetable.endTime) return;
+            
+            autoCloseInterval = setInterval(() => {
+                const now = new Date();
+                const [endH, endM] = timetable.endTime.split(':');
+                const endLimit = new Date();
+                endLimit.setHours(parseInt(endH), parseInt(endM), 0);
+
+                if (now > endLimit && activeSessionTimetableId === timetable.id) {
+                    showToast("Class time over. Auto-closing session.", "warning");
+                    endSession();
+                    clearInterval(autoCloseInterval);
+                }
+            }, 60000); 
+        }
+
+        // --- 5. MANUAL ATTENDANCE (Exception Mode) ---
+        function openManualModal() {
+            const modal = document.getElementById('manual-modal');
+            const content = document.getElementById('manual-modal-content');
+            
+            // Extract unique batches and subjects from loaded timetables
+            const batchSet = new Map();
+            const subjectSet = new Set();
+            
+            loadedTimetables.forEach(t => {
+                if(t.batch) batchSet.set(t.batch.id, t.batch.name);
+                if(t.subject) subjectSet.add(t.subject);
+            });
+
+            const batchSelect = document.getElementById('m-batch');
+            console.log(batchSet);
+            console.log(subjectSet);
+            console.log(loadedTimetables);
+            console.log(facultyId);
+            batchSelect.innerHTML = `<option value="">Choose...</option>` + 
+                Array.from(batchSet.entries()).map(([id, name]) => `<option value="${id}">${escapeHtml(name)}</option>`).join('');
+
+            const subjSelect = document.getElementById('m-subject');
+            subjSelect.innerHTML = `<option value="">Choose...</option>` + 
+                Array.from(subjectSet).map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+            
+            document.getElementById('m-date').valueAsDate = new Date();
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeManualModal() {
+            document.getElementById('manual-modal-content').classList.add('scale-95');
+            document.getElementById('manual-modal').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('manual-modal').classList.add('hidden'), 300);
+        }
+
+        async function submitManualAttendance() {
+            const batchId = document.getElementById('m-batch').value;
+            const subject = document.getElementById('m-subject').value;
+            const dateStr = document.getElementById('m-date').value;
+
+            if(!batchId || !subject || !dateStr) {
+                showToast("Please fill all manual fields", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('submit-manual-btn');
+            btn.disabled = true;
+            btn.innerText = "Submitting...";
+
+            try {
+                const url = new URL(`${API_BASE}/attendance/manual`);
+                url.searchParams.append('batchId', batchId);
+                url.searchParams.append('facultyId', facultyId);
+                url.searchParams.append('subject', subject);
+                url.searchParams.append('date', dateStr);
+
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: getHeaders()
+                });
+
+                if (res.ok) {
+                    showToast("Manual attendance entry created successfully.", "success");
+                    closeManualModal();
+                } else {
+                    const err = await res.text();
+                    showToast("Error: " + err, "error");
+                }
+            } catch(e) {
+                showToast("Server error while submitting.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Submit Entry";
+            }
+        }
+
+
+        // ════════════════════════════════════════════════════════
+        //  REPORTS TAB — Batch Report + Daily Report
+        // ════════════════════════════════════════════════════════
+
+        let currentReportData = [];
+        let currentReportType = '';
+
+        // Load batch dropdown when Reports tab opens
+        async function loadReportBatches() {
+            try {
+                const res = await fetch(`${API_BASE}/batches`, { headers: getHeaders() });
+                if (!res.ok) { showToast('error', 'Error', 'Could not load batches'); return; }
+                const batches = await res.json();
+                const sel = document.getElementById('report-batch-select');
+                sel.innerHTML = '<option value="">-- Select Batch --</option>';
+                batches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                showToast('error', 'Error', 'Failed to load batches');
+            }
+        }
+
+        // Load full batch attendance % report
+        async function loadBatchReport() {
+            const batchId = document.getElementById('report-batch-select').value;
+            if (!batchId) return;
+            document.getElementById('report-table-title').textContent = 'Loading...';
+            document.getElementById('report-table-body').innerHTML =
+                '<tr><td colspan="6" class="text-center py-8 text-slate-400">Loading...</td></tr>';
+            try {
+                const res = await fetch(
+                    `http://localhost:8080/api/faculty/reports/batch/${batchId}`,
+                    { headers: getHeaders() }
+                );
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                currentReportData = data;
+                currentReportType = 'batch';
+
+                const batchName = document.getElementById('report-batch-select')
+                    .options[document.getElementById('report-batch-select').selectedIndex].text;
+                document.getElementById('report-table-title').textContent =
+                    'Batch Report — ' + batchName;
+
+                const statusColor = {
+                    SAFE:     'bg-green-50 text-green-700 border-green-200',
+                    WARNING:  'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    DETAINED: 'bg-red-50 text-red-700 border-red-200'
+                };
+
+                if (data.length === 0) {
+                    document.getElementById('report-table-body').innerHTML =
+                        '<tr><td colspan="6" class="text-center py-8 text-slate-400">No students found in this batch.</td></tr>';
+                    return;
+                }
+
+                document.getElementById('report-table-body').innerHTML = data.map(s => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-mono text-slate-500 text-xs">${escapeHtml(s.rollNo || '—')}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-800">${escapeHtml(s.name)}</td>
+                        <td class="px-6 py-4 text-center text-slate-700">${s.presentClasses}</td>
+                        <td class="px-6 py-4 text-center text-slate-700">${s.totalClasses}</td>
+                        <td class="px-6 py-4 text-center font-bold ${s.attendancePercentage >= 75 ? 'text-green-600' : s.attendancePercentage >= 60 ? 'text-yellow-600' : 'text-red-600'}">${s.attendancePercentage}%</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${statusColor[s.status] || ''}">
+                                ${s.status}
+                            </span>
+                        </td>
+                    </tr>`).join('');
+
+                // Show export/print buttons
+                document.getElementById('export-btn') && document.getElementById('export-btn').classList.remove('hidden');
+                document.getElementById('print-btn')  && document.getElementById('print-btn').classList.remove('hidden');
+
+            } catch (e) {
+                document.getElementById('report-table-body').innerHTML =
+                    '<tr><td colspan="6" class="text-center py-8 text-red-400">Error loading report. Please try again.</td></tr>';
+            }
+        }
+
+        // Load daily attendance report for selected batch + date
+        async function loadDailyReport() {
+            const batchId = document.getElementById('report-batch-select').value;
+            const date    = document.getElementById('report-date').value;
+            if (!batchId) { showToast('error', 'Select Batch', 'Please select a batch first'); return; }
+            if (!date)    { showToast('error', 'Select Date', 'Please select a date'); return; }
+
+            document.getElementById('report-table-title').textContent = 'Loading...';
+            document.getElementById('report-table-body').innerHTML =
+                '<tr><td colspan="6" class="text-center py-8 text-slate-400">Loading...</td></tr>';
+
+            try {
+                // Get timetables for this batch
+                const ttRes = await fetch(
+                    `${API_BASE}/timetables-by-batch/${batchId}`,
+                    { headers: getHeaders() }
+                );
+                if (!ttRes.ok) throw new Error('Failed to get timetables');
+                const timetables = await ttRes.json();
+
+                if (timetables.length === 0) {
+                    document.getElementById('report-table-body').innerHTML =
+                        '<tr><td colspan="6" class="text-center py-8 text-slate-400">No timetable found for this batch.</td></tr>';
+                    return;
+                }
+
+                // Collect all daily attendance across all timetables for this date
+                let allRows = [];
+                for (const tt of timetables) {
+                    const res = await fetch(
+                        `http://localhost:8080/api/faculty/reports/daily/${tt.id}?date=${date}`,
+                        { headers: getHeaders() }
+                    );
+                    if (res.ok) {
+                        const rows = await res.json();
+                        rows.forEach(r => { r._subject = tt.subject; r._time = tt.startTime; });
+                        allRows = allRows.concat(rows);
+                    }
+                }
+
+                currentReportData = allRows;
+                currentReportType = 'daily';
+
+                const batchName = document.getElementById('report-batch-select')
+                    .options[document.getElementById('report-batch-select').selectedIndex].text;
+                document.getElementById('report-table-title').textContent =
+                    'Daily Report — ' + batchName + ' — ' + date;
+
+                if (allRows.length === 0) {
+                    document.getElementById('report-table-body').innerHTML =
+                        '<tr><td colspan="6" class="text-center py-8 text-slate-400">No attendance records found for this date.</td></tr>';
+                    return;
+                }
+
+                document.getElementById('report-table-body').innerHTML = allRows.map(s => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-mono text-slate-500 text-xs">${escapeHtml(s.rollNo || '—')}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-800">${escapeHtml(s.name)}</td>
+                        <td class="px-6 py-4 text-slate-600 text-xs">${escapeHtml(s._subject || '—')}</td>
+                        <td class="px-6 py-4 font-mono text-slate-500 text-xs">${escapeHtml(s.checkInTime || '—')}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${s.present ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                ${s.present ? 'Present' : 'Absent'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center font-mono text-xs ${s.aciLevel === 'HIGH' ? 'text-green-600' : s.aciLevel === 'MEDIUM' ? 'text-yellow-600' : s.aciLevel === 'LOW' ? 'text-orange-500' : 'text-red-500'}">
+                            ${s.aciScore != null ? s.aciScore + ' (' + s.aciLevel + ')' : '—'}
+                        </td>
+                    </tr>`).join('');
+
+                document.getElementById('export-btn') && document.getElementById('export-btn').classList.remove('hidden');
+                document.getElementById('print-btn')  && document.getElementById('print-btn').classList.remove('hidden');
+
+            } catch (e) {
+                document.getElementById('report-table-body').innerHTML =
+                    '<tr><td colspan="6" class="text-center py-8 text-red-400">Error loading report. Please try again.</td></tr>';
+            }
+        }
+
+        // Export CSV
+        function exportCSV() {
+            if (!currentReportData || currentReportData.length === 0) return;
+            let csv = '';
+            if (currentReportType === 'batch') {
+                csv = 'Roll No,Name,Present,Total,Percentage,Status\n';
+                currentReportData.forEach(s => {
+                    csv += `"${s.rollNo||''}","${s.name}","${s.presentClasses}","${s.totalClasses}","${s.attendancePercentage}%","${s.status}"\n`;
+                });
+            } else {
+                csv = 'Roll No,Name,Subject,Check-in Time,Status,ACI\n';
+                currentReportData.forEach(s => {
+                    csv += `"${s.rollNo||''}","${s.name}","${s._subject||''}","${s.checkInTime||''}","${s.present?'Present':'Absent'}","${s.aciScore!=null?s.aciScore+' ('+s.aciLevel+')':'—'}"\n`;
+                });
+            }
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = 'report_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Print Report
+        function printReport() {
+            const title   = document.getElementById('report-table-title').textContent;
+            const tableEl = document.querySelector('#report-table-body').closest('table');
+            const tableClone = tableEl.cloneNode(true);
+            const win = window.open('', '_blank');
+            const doc = win.document;
+            doc.write('<!DOCTYPE html><html><head><title>' + title + '</title>');
+            doc.write('<style>body{font-family:sans-serif;padding:24px;color:#1e293b;}h2{margin-bottom:16px;font-size:18px;}table{width:100%;border-collapse:collapse;font-size:13px;}th,td{border:1px solid #e2e8f0;padding:8px 12px;text-align:left;}th{background:#f8fafc;font-weight:600;color:#64748b;}tr:nth-child(even){background:#f8fafc;}@media print{body{padding:0;}}</style>');
+            doc.write('</head><body><h2>' + title + '</h2>');
+            doc.close();
+            win.document.body.appendChild(tableClone);
+            setTimeout(() => { win.print(); }, 300);
+        }
+
+        // --- UTILS ---
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // INIT
+        document.addEventListener("DOMContentLoaded", () => {
+            switchTab('schedule');
+        });
+    </script>
+</body>
+</html>
